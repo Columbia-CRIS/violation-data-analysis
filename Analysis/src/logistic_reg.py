@@ -3,8 +3,8 @@
 """Load OSHA oil&gas big 5 violation data and run a logistic regression.
 
 @author: Albert
-@version: 0.1
-@date: 08/22/16
+@version: 0.1.1
+@date: 08/24/16
 
 The regression takes 1973-2004 data to predict 2005 and moving onwards.
 The regression model is a single factor model of ``violation/inspection``.
@@ -171,6 +171,7 @@ if __name__ == "__main__":
     #bp_prod = processed_data[2]
 
     # Test 2, use BP time series data
+    # Use 2003 before data as training, use 2004 to predict 2005, etc.
     processed_data = preprocess_single_company(data, 
                                                'BP', '2003', 
                                                '2004', 10000)
@@ -191,6 +192,8 @@ if __name__ == "__main__":
     prediction = lr.predict(bp_test)
 
     years = bp_prod.reset_index().year.values.tolist()
+    years = [x+1 for x in years]
+
     # Plot predication vs. year
     plt.xlim(2003, 2017)
     plt.ylim(-0.5, 1.5)
