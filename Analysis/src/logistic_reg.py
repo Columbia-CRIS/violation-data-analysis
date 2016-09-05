@@ -1,10 +1,18 @@
 #!usr/bin/env ipython
 
-"""Load oil&gas big 5 violation data and run a logistic regression.
+"""Load OSHA oil&gas big 5 violation data and run a logistic regression.
 
 @author: Albert
-@version: 0.0
-@date: 08/19/16
+@version: 0.1
+@date: 08/22/16
+
+The regression takes 1973-2004 data to predict 2005 and moving onwards.
+The regression model is a single factor model of ``violation/inspection``.
+
+TODO:
+    * generalize preprocess.
+    * Both industrial model and company model should be generalized, and put
+    in different files.
 
 """
 
@@ -31,15 +39,26 @@ def convert_accident_label_bernoulli(p):
     return label
 
 
-if __name__ == "__main__":
-    dataset = ['../data/oil_and_gas_violators_v1.csv']
+def preprocess(data, training_index, test_index, threshold):
+    """Preprocess the big 5 data.
 
-    # Use dataset[0]
-    data = pd.read_csv(dataset[0], sep=',', header=0)
+    Only works for big 5 data. Naive treatment of time series by taking
+    average.
 
-    colname = data.columns.values.tolist()
+    Args:
+        data (pandas.DataFrame): data loaded from csv.
 
-    year_data = data.set_index('year')
+        training_index (str): a year index, separate the original data to
+        training and test.
+
+        test_index (str): a year index, separate the original data to
+        training and test.
+
+        threshold (float): a threshold penalty value that determines accident
+
+    Returns:
+        pandas.DataFrame: resulting training and test DataFrames.
+    """
 
     parent_data = data.set_index('parent')
 
@@ -51,49 +70,112 @@ if __name__ == "__main__":
     tesoro = parent_data.loc['Tesoro']
 
     # Development data
-    berk_dev = berk.set_index('year').loc[:'2010']
-    bp_dev = bp.set_index('year').loc[:'2010']
-    exxon_dev = exxon.set_index('year').loc[:'2010']
-    shell_dev = shell.set_index('year').loc[:'2010']
-    tesoro_dev = tesoro.set_index('year').loc[:'2010']
+    berk_dev = berk.set_index('year').loc[:training_index]
+    bp_dev = bp.set_index('year').loc[:training_index]
+    exxon_dev = exxon.set_index('year').loc[:training_index]
+    shell_dev = shell.set_index('year').loc[:training_index]
+    tesoro_dev = tesoro.set_index('year').loc[:training_index]
 
     # Production data
-    berk_prod = berk.set_index('year').loc['2011':]
-    bp_prod = bp.set_index('year').loc['2011':]
-    exxon_prod = exxon.set_index('year').loc['2011':]
-    shell_prod = shell.set_index('year').loc['2011':]
-    tesoro_prod = tesoro.set_index('year').loc['2011':]
+    berk_prod = berk.set_index('year').loc[test_index:]
+    bp_prod = bp.set_index('year').loc[test_index:]
+    exxon_prod = exxon.set_index('year').loc[test_index:]
+    shell_prod = shell.set_index('year').loc[test_index:]
+    tesoro_prod = tesoro.set_index('year').loc[test_index:]
 
-
-    #-------------------------------
-    #### Treatment - first trail ###
-    #-------------------------------
-    # Take average of each factor
+    # Take average of each factor, naive treatment
     berk_mean = berk_dev.mean()
     bp_mean = bp_dev.mean()
     exxon_mean = exxon_dev.mean()
     shell_mean = shell_dev.mean()
     tesoro_mean = tesoro_dev.mean()
 
-    dev_dict = {'Berkshire Hathaway': berk_mean, 
-                'BP': bp_mean, 
-                'EXXON MOBIL CORP': exxon_mean, 
-                'Royal Dutch Shell': shell_mean, 
+    dev_dict = {'Berkshire Hathaway': berk_mean,
+                'BP': bp_mean,
+                'EXXON MOBIL CORP': exxon_mean,
+                'Royal Dutch Shell': shell_mean,
                 'Tesoro': tesoro_mean}
 
     data_dev = pd.DataFrame.from_dict(dev_dict).transpose()
 
-    # Add a label based on penalty
-    # A naive way to make accident label is use bernoulli dist convert penalty
-    #     percentage to binary label.
-    penalty_sum = sum(data_dev.total_penalties)
-    data_dev['pct_penalty'] = data_dev.total_penalties / penalty_sum
+    temp_label = list()
+    for i, val in enumerate(data_dev.total_penalties.values.tolist()):
+        if val >= threshold:
+            temp_label.append(1)
+        else:
+            temp_label.append(0)
+
+    data_dev['accident_label'] = temp_label
+
+    return data_dev, berk_prod, bp_prod, exxon_prod, shell_prod, tesoro_prod
+
+
+def preprocess_single_company(data, comp_name, training_index, 
+                                  test_index, threshold):
+    """Preprocess the single company data.
+
+    Only works for big 5 data. Naive treatment of time series by taking
+    average.
+
+    Args:
+        data (pandas.DataFrame): data loaded from csv.
+
+        comp_name (str): company name.
+
+        training_index (str): a year index, separate the original data to
+        training and test.
+
+        test_index (str): a year index, separate the original data to
+        training and test.
+
+        threshold (float): a threshold penalty value that determines accident
+
+    Returns:
+        pandas.DataFrame: resulting training and test DataFrames.
+    """
+
+    parent_data = data.set_index('parent')
+
+    temp_comp = parent_data.loc[comp_name]
+    temp_dev = temp_comp.set_index('year').loc[:training_index]
+    temp_prod = temp_comp.set_index('year').loc[test_index:]
+
+    temp_label = list()
+    for i, val in enumerate(temp_dev.total_penalties.values.tolist()):
+        if val >= threshold:
+            temp_label.append(1)
+        else:
+            temp_label.append(0)
+
+    temp_dev['accident_label'] = temp_label
+
+    return temp_dev, temp_prod
+
+
+if __name__ == "__main__":
+    dataset = ['../data/oil_and_gas_violators_v1.csv',
+               '../data/ViolationTracker_publicdataset_2aug16_maindata.csv']
+
+    # Use dataset[0]
+    data = pd.read_csv(dataset[0], sep=',', header=0)
+
+    colname = data.columns.values.tolist()
+
+    year_data = data.set_index('year')
 
     np.random.seed(100)
 
-    data_dev['accident_label'] = convert_accident_label_bernoulli(
-                                     data_dev.pct_penalty)
+    # Test 1, use averaged big 5 data
+    #processed_data = preprocess(data, '2004', '2005', 10000)
+    #data_dev = processed_data[0]
+    #bp_prod = processed_data[2]
 
+    # Test 2, use BP time series data
+    processed_data = preprocess_single_company(data, 
+                                               'BP', '2003', 
+                                               '2004', 10000)
+    data_dev = processed_data[0]
+    bp_prod = processed_data[1]
 
     # logistic regression
     x_dev = data_dev['viols_per_inspection'].as_matrix()
@@ -107,11 +189,10 @@ if __name__ == "__main__":
     lr.fit(x_train, y_train)
     prob = lr.predict_proba(bp_test)
     prediction = lr.predict(bp_test)
-    print(prediction)
 
     years = bp_prod.reset_index().year.values.tolist()
-    #Plot predication vs. year
-    plt.xlim(2010, 2017)
+    # Plot predication vs. year
+    plt.xlim(2003, 2017)
     plt.ylim(-0.5, 1.5)
     plt.plot(years, prediction, 'bs')
     plt.show()
