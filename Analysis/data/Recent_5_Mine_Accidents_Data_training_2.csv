@@ -1,0 +1,58 @@
+violator_name,mine_name,total_penalties,num_violations_t_minus_1,num_violations,iss_year,accident_label_t_plus_1
+Jim Walter Resources Inc,No 5 Mine,0,119,103,1/1/1983,0
+Jim Walter Resources Inc,No 5 Mine,0,103,339,1/1/1984,0
+Jim Walter Resources Inc,No 5 Mine,0,339,355,1/1/1985,0
+Jim Walter Resources Inc,No 5 Mine,0,355,302,1/1/1986,0
+Jim Walter Resources Inc,No 5 Mine,0,302,371,1/1/1987,0
+Jim Walter Resources Inc,No 5 Mine,0,371,380,1/1/1988,0
+Jim Walter Resources Inc,No 5 Mine,0,380,288,1/1/1989,0
+Jim Walter Resources Inc,No 5 Mine,0,288,309,1/1/1990,0
+Jim Walter Resources Inc,No 5 Mine,0,309,417,1/1/1991,0
+Jim Walter Resources Inc,No 5 Mine,0,417,365,1/1/1992,0
+Jim Walter Resources Inc,No 5 Mine,0,365,466,1/1/1993,0
+Jim Walter Resources Inc,No 5 Mine,0,466,499,1/1/1994,1
+Jim Walter Resources Inc,No 5 Mine,147793,499,505,1/1/1995,1
+Jim Walter Resources Inc,No 5 Mine,107551,505,333,1/1/1996,0
+Jim Walter Resources Inc,No 5 Mine,46053,333,284,1/1/1997,0
+Jim Walter Resources Inc,No 5 Mine,59704,284,382,1/1/1998,1
+Jim Walter Resources Inc,No 5 Mine,109738,382,604,1/1/1999,0
+Jim Walter Resources Inc,No 5 Mine,82072,604,524,1/1/2000,1
+Jim Walter Resources Inc,No 5 Mine,104938,524,426,1/1/2001,0
+Jim Walter Resources Inc,No 5 Mine,76472,426,483,1/1/2002,0
+Jim Walter Resources Inc,No 5 Mine,55053.1,483,457,1/1/2003,0
+Jim Walter Resources Inc,No 5 Mine,96624,457,405,1/1/2004,0
+Jim Walter Resources Inc,No 5 Mine,70762.2,405,282,1/1/2005,0
+Wolf Run Mining Company,Sago Mine,9575,29,68,1/1/2004,0
+Wolf Run Mining Company,Sago Mine,95726,68,205,1/1/2005,0
+Wolf Run Mining Company,Sago Mine,141642,205,95,1/1/2007,0
+Wolf Run Mining Company,Sago Mine,12566,95,48,1/1/2008,0
+Kentucky Darby Llc,Darby Mine No 1,4281,15,51,1/1/2002,0
+Kentucky Darby Llc,Darby Mine No 1,4836,51,55,1/1/2004,0
+Kentucky Darby Llc,Darby Mine No 1,7116,55,71,1/1/2005,0
+Kentucky Darby Llc,Darby Mine No 1,47314,71,93,1/1/2006,1
+Genwal Resources Inc,Crandall Canyon Mine,6537,50,90,1/1/1996,0
+Genwal Resources Inc,Crandall Canyon Mine,7084,90,71,1/1/1997,0
+Genwal Resources Inc,Crandall Canyon Mine,13754,71,117,1/1/1998,0
+Genwal Resources Inc,Crandall Canyon Mine,11424,117,102,1/1/1999,0
+Genwal Resources Inc,Crandall Canyon Mine,14195,102,69,1/1/2000,0
+Genwal Resources Inc,Crandall Canyon Mine,19167,69,71,1/1/2001,0
+Genwal Resources Inc,Crandall Canyon Mine,5764,71,52,1/1/2002,0
+Genwal Resources Inc,Crandall Canyon Mine,38323,52,157,1/1/2003,0
+Genwal Resources Inc,Crandall Canyon Mine,83741,157,138,1/1/2004,0
+Genwal Resources Inc,Crandall Canyon Mine,22334,138,69,1/1/2005,0
+Genwal Resources Inc,Crandall Canyon Mine,43956,69,81,1/1/2006,0
+Genwal Resources Inc,Crandall Canyon Mine,25266.3,81,32,1/1/2007,1
+Massey Energy Company,Upper Big Branch Mine-South,19851,59,141,1/1/1996,0
+Massey Energy Company,Upper Big Branch Mine-South,20984,141,149,1/1/1997,0
+Massey Energy Company,Upper Big Branch Mine-South,54805,149,169,1/1/1998,0
+Massey Energy Company,Upper Big Branch Mine-South,22948,169,112,1/1/1999,0
+Massey Energy Company,Upper Big Branch Mine-South,44913,112,141,1/1/2001,0
+Massey Energy Company,Upper Big Branch Mine-South,60806,141,201,1/1/2002,0
+Massey Energy Company,Upper Big Branch Mine-South,41040.1,201,166,1/1/2003,0
+Massey Energy Company,Upper Big Branch Mine-South,47341,166,222,1/1/2004,0
+Massey Energy Company,Upper Big Branch Mine-South,27889,222,127,1/1/2005,1
+Massey Energy Company,Upper Big Branch Mine-South,179614,127,161,1/1/2006,1
+Massey Energy Company,Upper Big Branch Mine-South,232663,161,264,1/1/2007,1
+Massey Energy Company,Upper Big Branch Mine-South,225869,264,186,1/1/2008,1
+Massey Energy Company,Upper Big Branch Mine-South,888773,186,498,1/1/2009,1
+Massey Energy Company,Upper Big Branch Mine-South,10719626,498,364,1/1/2011,1
