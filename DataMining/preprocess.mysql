@@ -1,0 +1,60 @@
+'''This assumes the following tables are downloaded:
+        1. osha_violation
+        2. osha_inspection
+        3. gjf_data (this is their master file shared with us)
+        4. All corpwatch tables esp. companies.sql, company_info.sql
+        5. msha_inspection
+        6. msha_violation
+        7. msha_assssd_violation
+        8. msha_accident
+'''
+####Preprocess  osha_inspection by adding column open_year and removing punctuation###
+UPDATE osha_inspection
+	SET estab_name = REPLACE(REPLACE(estab_name, ',', ''), '.', '');
+ALTER TABLE osha_inspection
+	ADD open_year year;
+UPDATE osha_inspection
+	SET open_year = YEAR(open_date) WHERE open_date != '';
+
+
+###Setup indices for inspection/violation/subsidiary joining *osha###
+CREATE INDEX inspection_activity_nr_idx
+	ON osha_inspection (activity_nr);
+CREATE INDEX violation_activity_nr_idx
+	ON osha_violation (activity_nr);
+CREATE INDEX inspection_estab_name_year
+	ON osha_inspection (estab_name, open_year);
+CREATE INDEX company_info_company_name_year_idx
+	ON company_info (company_name , year);
+
+#Deals with case where no parent from Good Jobs First. In this case create parent = company
+UPDATE GJF_DATA SET parent_name = company WHERE parent_name = '';
+
+#Create subsidiary matching table based on Good Jobs First and corpwatch data
+CREATE TABLE subsidiary_matching AS (SELECT * FROM (
+    #Part 1 of table as subsidiary,parent, year from Good Jobs
+    SELECT DISTINCT company AS subsidiary, parent_name AS parent, pen_year AS year 
+        FROM GJF_Data
+        UNION #Combine this with...
+        #From corpwatch
+        SELECT DISTINCT company_info.company_name as subsidiary, desired_companies.company_name as parent, year
+            FROM company_info 
+        JOIN (SELECT DISTINCT cw_id, company_name 
+			    FROM companies) desired_companies
+            ON company_info.top_parent_id = desired_companies.cw_id) a );
+
+#Format subsidiary matching such that the punctuation is removed
+UPDATE subsidiary_matching
+	SET subsidiary = REPLACE(REPLACE(subsidiary, ',', ''), '.', ''),
+	 parent = REPLACE(REPLACE(parent, ',', ''), '.', '');
+
+#Index the subsidiary_matching table to make queries faster
+CREATE INDEX subsidiary_matching_subsidiary_idx
+	ON subsidiary_matching (subsidiary);
+CREATE INDEX subsidiary_matching_parent_idx
+	ON subsidiary_matching (parent);
+CREATE INDEX subsidiary_matching_year_idx
+	ON subsidiary_matching (year);
+
+
+#msha preprocessing with indices - [to be added]
