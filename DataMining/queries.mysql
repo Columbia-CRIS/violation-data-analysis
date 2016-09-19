@@ -1,0 +1,81 @@
+
+#Matches each violation that was not deleted with the establishment
+#Reports the industry, num_violations, total_penalties, in a given year
+SELECT osha_inspection.estab_name, LEFT(osha_inspection.sic_code, LENGTH(osha_inspection.sic_code)-2) AS two_digit_sic_code, a.year,
+		SUM(a.number_of_violations) AS total_company_violations,
+		SUM(a.penalties) as total_penalties
+	FROM (
+		SELECT activity_nr, YEAR(issuance_date) as 'year', 
+		COUNT(*) AS number_of_violations, SUM(current_penalty) as penalties
+			FROM osha_violation
+			WHERE delete_flag !='X'
+			GROUP BY 1,2
+			ORDER BY 1,2
+		) a 
+	JOIN osha_inspection ON a.activity_nr = osha_inspection.activity_nr
+	GROUP BY 1,3,2
+	ORDER BY two_digit_sic_code ASC, estab_name ASC, 'year' ASC;
+	
+#Matches parent/subsidiary with num_violations and total_penalties only corpwatch
+#Company_Violations is a table that can be obtained by running the above query
+SELECT companies.company_name AS parent, 
+		b.sic_code AS sic_industry_code, 
+		SUM(b.num_violations) AS total_num_violations, 
+		SUM(b.penalties) AS total_penalties
+	FROM (
+			SELECT a.company_name, 
+					a.top_parent_id, 
+					company_violations.two_digit_sic_code AS sic_code, 
+					SUM(company_violations.total_company_violations) AS num_violations, 
+					SUM(company_violations.total_penalties) AS penalties
+				FROM
+					(SELECT DISTINCT company_name, top_parent_id, year
+					FROM company_info
+					WHERE year >= 1994) a
+				JOIN company_violations 
+				ON (a.company_name = company_violations.estab_name 
+					AND a.year = company_violations.year)
+				GROUP BY a.company_name, a.top_parent_id, sic_code
+	) b
+	JOIN companies
+	ON b.top_parent_id = companies.cw_id
+	GROUP BY parent, sic_industry_code;
+
+
+#Matching of parent/subsidiary for all known in our DB
+SELECT parent, open_year, SUM(osha_violation.current_penalty) AS total_penalties, 
+		COUNT(osha_violation.activity_nr) as num_violations, AVG(gravity) as avg_gravity
+FROM (SELECT DISTINCT activity_nr, subsidiary, parent, open_year #only want one instance of activity_nr
+	FROM (
+			SELECT subsidiary, parent, year 
+			FROM subsidiary_matching 
+			WHERE parent = "EXXON MOBIL CORP" #specify more conditions if applicable
+			) subsidiaries #desired subsidiaries
+	#Join the desired subsidiaries with their estab_names in inspection in the given year
+	JOIN (SELECT * FROM osha_inspection) inspections 
+	ON (subsidiaries.subsidiary = inspections.estab_name AND (open_year = year OR open_year <= year))
+	) activity_nrs
+#Join on all violations
+JOIN osha_violation
+ON activity_nrs.activity_nr = osha_violation.activity_nr
+WHERE osha_violation.delete_flag != 'X' #remove the deleted - speeds things up
+GROUP BY parent, open_year;
+
+
+#mine query 1 really ugly and need to clean this up
+SELECT violation_table.mine_id, mine_name, total_penalties, num_violations, num_injuries, num_accidents, avg_exp_tot, avg_exp_mine, avg_exp_job, avg_gravity, iss_year as year
+FROM (SELECT mine_id, mine_name, ROUND(SUM(current_assessment_amt),2) as total_penalties, COUNT(*) as num_violations, iss_year 
+	FROM msha_violation 
+	LEFT JOIN msha_assssd_violation ON msha_violation.viol_no = msha_assssd_violation.citation_nbr 
+	WHERE mine_id IN 
+		(SELECT mine_id FROM (SELECT mine_id, AVG(exper_tot_calc), AVG(exper_mine_calc), AVG(exper_job_calc), AVG(degree_injury_cd), SUM(no_injuries) as num_injuries, COUNT(*) as num_accidents
+			FROM msha_accident WHERE ai_year > 2000
+			GROUP BY mine_id
+			ORDER BY num_accidents DESC, num_injuries DESC) a WHERE mine_name = "No 5 Mine")
+	GROUP BY mine_id, mine_name, iss_year ORDER BY mine_id, mine_name, iss_year ASC) violation_table
+LEFT JOIN 
+			(SELECT mine_id, ai_year, AVG(exper_tot_calc) as avg_exp_tot, AVG(exper_mine_calc) as avg_exp_mine, AVG(exper_job_calc) as avg_exp_job, AVG(degree_injury_cd) as avg_gravity, SUM(no_injuries) as num_injuries, COUNT(*) as num_accidents
+				FROM msha_accident WHERE ai_year > 2000
+				GROUP BY mine_id, ai_year
+				ORDER BY num_accidents DESC, num_injuries DESC) accidents 
+ON (violation_table.mine_id = accidents.mine_id AND violation_table.iss_year = accidents.ai_year)
