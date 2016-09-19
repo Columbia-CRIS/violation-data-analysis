@@ -3,14 +3,16 @@
 """Load MSHA data and run a logistic regression.
 
 @author: Albert
-@version: 0.0.0
-@date: 09/05/16
+@version: 0.0.1
+@date: 09/15/16
 
 """
 
 import pandas as pd
 import numpy as np
+from sklearn import cross_validation
 from sklearn.linear_model import LogisticRegression
+from sklearn.learning_curve import learning_curve
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
@@ -40,93 +42,80 @@ def plot_decision_regions(X, y, classifier, resolution=0.02):
                     marker=markers[idx], label=cl)
 
 
-def test_1(data_file_path):
-    """Test using `simulated_y2000_mine_data.csv`.
+def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
+                        n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
+    """Generate a simple plot of the test and traning learning curve.
+
+    Parameters:
+        estimator : object type that implements the "fit" and "predict" methods
+            An object of that type which is cloned for each validation.
+
+        title : string
+            Title for the chart.
+
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples is the number of samples and
+            n_features is the number of features.
+
+        y : array-like, shape (n_samples) or (n_samples, n_features), optional
+            Target relative to X for classification or regression;
+            None for unsupervised learning.
+
+        ylim : tuple, shape (ymin, ymax), optional
+            Defines minimum and maximum yvalues plotted.
+
+        cv : integer, cross-validation generator, optional
+            If an integer is passed, it is the number of folds (defaults to 3).
+            Specific cross-validation objects can be passed, see
+            sklearn.cross_validation module for the list of possible objects
+
+        n_jobs : integer, optional
+            Number of jobs to run in parallel (default 1).
 
     """
-    data = pd.read_csv(data_file_path, sep=',', header=0)
+    plt.figure()
+    plt.title(title)
+    if ylim is not None:
+        plt.ylim(*ylim)
+    plt.xlabel("Training examples")
+    plt.ylabel("Score")
+    train_sizes, train_scores, test_scores = learning_curve(
+        estimator, X, y, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes)
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+    plt.grid()
 
-    # logistic regression
-    x_dev = data['Sum of num_violations'].as_matrix()
-    x_train = np.vstack(x_dev)
-    y_train = data['accident_label_t_plus_1'].as_matrix()
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.1,
+                     color="r")
+    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, alpha=0.1, color="g")
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+             label="Training score")
+    plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+             label="Cross-validation score")
 
-    x_prod = data['Sum of num_violation_t_plus_1'].as_matrix()
-    x_test = np.vstack(x_prod)
-
-    lr = LogisticRegression(C=500)
-    lr.fit(x_train, y_train)
-    prediction = lr.predict(x_test)
-
-    return prediction
-
-
-def test_2(data_file_path, feature_name):
-    """Test for all mining data.
-
-    Use an artificial ``accident_label``.
-
-    Data:
-        Recent_5_Mine_Accidents_Data.csv
-
-    """
-    data = pd.read_csv(data_file_path, sep=',', header=0)
-
-    msk = np.random.rand(len(data)) < 0.8
-    x_dev = data[msk][feature_name].as_matrix()
-    x_train = np.vstack(x_dev)
-    y_train = data[msk]['accident_label'].as_matrix()
-
-    x_prod = data[~msk][feature_name].as_matrix()
-    x_test = np.vstack(x_prod)
-
-    lr = LogisticRegression(C=500)
-    lr.fit(x_train, y_train)
-    prediction = lr.predict(x_test)
-
-    return prediction
+    plt.legend(loc="best")
+    return plt
 
 
-def test_3(training_file_path, test_file_path, feature_name):
-    """Try new input data frame.
-
-    Use `y_{t+1} vs. x_t`
-
-    Data:
-        Recent_5_Mine_Accidents_Data_training.csv',
-        Recent_5_Mine_Accidents_Data_test.csv'
-
-    """
-    data_training = pd.read_csv(training_file_path)
-    data_test = pd.read_csv(test_file_path)
-
-    x_dev = data_training[feature_name].as_matrix()
-    x_train = np.vstack(x_dev)
-    y_train = data_training['accident_label_t_plus_1'].as_matrix()
-
-    x_prod = data_test[feature_name].as_matrix()
-    x_test = np.vstack(x_prod)
-
-    lr = LogisticRegression(C=500)
-    lr.fit(x_train, y_train)
-    prediction = lr.predict(x_test)
-
-    return prediction
-
-
-def test_4(training_file_path, feature_list):
+def test_1(data_file_path, feature_list):
     """Plot two-feature decision boundary.
 
+    ``log(penalty)`` vs. ``num_violation``
+
     Data:
-        Recent_5_Mine_Accidents_Data_training.csv
+        `top_5_accident_mines_geq_30.csv`
 
     """
-    data_training = pd.read_csv(training_file_path)
-    data_training.fillna(0, inplace=True)
+    data = pd.read_csv(data_file_path)
+    data.fillna(0, inplace=True)
 
-    data_training[feature_list[2]] = np.log(data_training[feature_list[2]] + 1)
-    x_train = data_training[[feature_list[0], feature_list[2]]].values
-    y_train = data_training['accident_label_t_plus_1'].values
+    data[feature_list[2]] = np.log(data[feature_list[2]] + 1)
+    x_train = data[[feature_list[0], feature_list[2]]].values
+    y_train = data['accident_label_t_plus_1'].values
 
     lr = LogisticRegression(C=500)
     lr.fit(x_train, y_train)
@@ -141,18 +130,20 @@ def test_4(training_file_path, feature_list):
     plt.show()
 
 
-def test_5(training_file_path, feature_list):
+def test_2(data_file_path, feature_list):
     """Plot two-feature decision boundary.
 
+    ``num_violation_t`` vs. ``num_violation_t_minus_1``
+
     Data:
-        Recent_5_Mine_Accidents_Data_training_2.csv
+        `Recent_5_Mine_Accidents_Data_training_2.csv`
 
     """
-    data_training = pd.read_csv(training_file_path)
-    data_training.fillna(0)
+    data = pd.read_csv(data_file_path)
+    data.fillna(0)
 
-    x_train = data_training[feature_list[0:2]].values
-    y_train = data_training['accident_label_t_plus_1'].values
+    x_train = data[feature_list[0:2]].values
+    y_train = data['accident_label_t_plus_1'].values
 
     lr = LogisticRegression(C=500)
     lr.fit(x_train, y_train)
@@ -167,21 +158,55 @@ def test_5(training_file_path, feature_list):
     plt.show()
 
 
+def test_3(data_file_path, feature_list):
+    """Check whether label is reasonable.
+
+    Plot ``num_violation`` vs. ``accident_label_t_plus_1``
+
+    Data:
+        `top_5_accident_mines_geq_80.csv`
+
+    """
+    data = pd.read_csv(data_file_path)
+
+    acc_label = data['accident_label_t_plus_1']
+    x_val = data[feature_list[2]]
+
+    plt.scatter(x_val, acc_label)
+    plt.xlabel(feature_list[2])
+    plt.ylabel('accident_label_t_plus_1')
+    plt.ylim(-0.5, 1.5)
+    # plt.legend(loc='upper left')
+
+    plt.show()
+
+
+def test_4(data_file_path, feature_list):
+    """Plot learning curve.
+
+    """
+    data = pd.read_csv(data_file_path)
+
+    x_train = data[feature_list[0:1]].values
+    y_train = data['accident_label_t_plus_1'].values
+
+    title = 'Learning Curve'
+    cv = cross_validation.ShuffleSplit(x_train.shape[0], random_state=100)
+    estimator = LogisticRegression(C=500)
+    plot_learning_curve(estimator, title, x_train, y_train, cv=cv)
+
+    plt.show()
+
+
 if __name__ == "__main__":
-    dataset = ['../data/simulated_y2000_mine_data.csv',
-               '../data/Recent_5_Mine_Accidents_Data.csv',
-               '../data/Recent_5_Mine_Accidents_Data_training.csv',
-               '../data/Recent_5_Mine_Accidents_Data_test.csv',
-               '../data/Recent_5_Mine_Accidents_Data_training_2.csv',
-               '../data/top_5_accident_mines_processed.csv']
+    dataset = ['../data/Recent_5_Mine_Accidents_Data_training_2.csv',
+               '../data/top_5_accident_mines_processed_geq_30.csv',
+               '../data/top_5_accident_mines_processed_geq_80.csv']
     feature_list = ['num_violations',
                     'num_violations_t_minus_1',
                     'total_penalties']
 
-    np.random.seed(100)
-
-    # print(test_1(dataset[0]))
-    # print(test_2(dataset[1], feature_list[0]))
-    # print(test_3(dataset[2], dataset[3], feature_list[0]))
-    test_4(dataset[5], feature_list)
-    test_5(dataset[4], feature_list)
+    # test_1(dataset[1], feature_list)
+    # test_2(dataset[0], feature_list)
+    # test_3(dataset[2], feature_list)
+    test_4(dataset[1], feature_list)
