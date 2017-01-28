@@ -1,0 +1,1 @@
+The data are from [here](https://enforcedata.dol.gov/views/data_catalogs.php); they can be found under "MSHA Enforcement Data". On the right side, you should be able to see "msha_accident", "msha_violation", and "msha_assssd_violation"; download the CSVs (left side link) to the same folder as the analysis script.
