@@ -330,18 +330,27 @@ all_accident_violation_rollover
 
 all_accident_violation_cleaned <- data.frame()
 counter <- 1
-for (x in unique(all_accident_rollover$mine_id)){
+for (x in unique(all_accident_rollover$mine_id)[599:11830]){
   print(counter)
   counter = counter +1
+  
   temp <- all_accident_violation_rollover %>% filter(mine_id==x)
+  for ( i in 4:11){
+    temp[,i] = as.numeric(temp[,i])
+  }
+    
+  if(sum(temp[,4:11]) == 0) next
+
+  #beginning
   i <- 1
   while( sum(temp[i,4:11],na.rm = TRUE) == 0){
     i = i+1
   }
   if(i != 1){
-    temp <- temp[-c(1:15),]
+    temp <- temp[-c(1:i),]
   }
   
+  #ending
   i <- nrow(temp)
   while( sum(temp[i,4:11]) == 0){
     i = i-1
@@ -349,8 +358,13 @@ for (x in unique(all_accident_rollover$mine_id)){
   if(i != nrow(temp)){
     temp <- temp[-c(nrow(temp)-i:nrow(temp)),]
   }
+  
   all_accident_violation_cleaned <- rbind(all_accident_violation_cleaned,temp)
+  
 }
+
 all_accident_violation_cleaned
+temp
+  
 ```
 
