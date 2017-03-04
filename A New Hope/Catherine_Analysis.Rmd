@@ -296,22 +296,22 @@ violation_rollover <- roll_over(violations,
                                 end.year)
 violation_rollover
 
-
+accidents[which(accidents$inj_degr_desc == "FATALITY"), "days_lost"] <- 300
 all.quarter.level.accidents <- accidents %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
                                             summarize(base = sum(days_lost, na.rm = T) + sum(days_restrict, na.rm = T))
 all_accident_rollover <- roll_over(accidents,
                                    all.quarter.level.accidents,
                                    longest.period,
-                                   1984,
-                                   2016)
+                                   2000,
+                                   2015)
 all_accident_rollover
 
 
 all_violation_rollover <- roll_over(accidents,
                                    quarter.level.violations,
                                    longest.period,
-                                   1984,
-                                   2016)
+                                   2000,
+                                   2015)
 all_violation_rollover
 
 ```
@@ -326,35 +326,31 @@ quarter.days_lost.violation
 
 all_accident_violation_rollover <- merge(all_accident_rollover,all_violation_rollover, by = c("mine_id","year","quarter"),all=TRUE)
 all_accident_violation_rollover[is.na(all_accident_violation_rollover)]<-0
-all_accident_violation_rollover
+all_accident_violation_rollover 
 
-#remove start year
+all_accident_violation_cleaned <- data.frame()
+counter <- 1
 for (x in unique(all_accident_rollover$mine_id)){
+  print(counter)
+  counter = counter +1
   temp <- all_accident_violation_rollover %>% filter(mine_id==x)
   i <- 1
-  while( sum(temp[i,3:11]) == 0){
+  while( sum(temp[i,4:11],na.rm = TRUE) == 0){
     i = i+1
   }
   if(i != 1){
-    print(x)
-    print(i)
-    temp <- temp[-1:i,]
+    temp <- temp[-c(1:15),]
   }
-}
-
-  #remove end year
-for (mine_id in unique(all_accident_rollover$mine_id)){
-  temp <- all_accident_violation_rollover %>% filter(mine_id==x)
+  
   i <- nrow(temp)
-  while( sum(temp[i,3:11]) == 0){
+  while( sum(temp[i,4:11]) == 0){
     i = i-1
   }
   if(i != nrow(temp)){
-    print(x)
-    print(i)
-    temp <- temp[-i:nrow(temp),]
+    temp <- temp[-c(nrow(temp)-i:nrow(temp)),]
   }
+  all_accident_violation_cleaned <- rbind(all_accident_violation_cleaned,temp)
 }
-
+all_accident_violation_cleaned
 ```
 
