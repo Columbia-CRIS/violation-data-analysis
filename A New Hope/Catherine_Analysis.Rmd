@@ -1,0 +1,360 @@
+---
+title: "Mines Accident Prediction"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Mine Accidents
+Data sources
+
+```{r Packages}
+require(dplyr)
+library(RcppRoll)
+library(zoo)
+```
+
+```{r loading raw data}
+setwd("C:/Users/CATHY/OneDrive/Documents/2016-2017 Junior/15 Mines Research/violation-data-analysis/")
+
+
+if(!exists("accidents")) {
+  accidents <- load("./Analysis/data/mshs_accidents.RData")
+}
+if(!exists("violations")) {
+  violations <- load("./Analysis/data/mshs_violations.RData")
+}
+if(!exists("assessed_violations")) {
+  assessed_violations <- load("./Analysis/data/mshs_assssd_violation.RData")
+}
+```
+
+```{r accident cleaning}
+actual.accidents <- accidents %>% filter(is.element(inj_degr_desc, c("DAYS AWAY FROM WORK ONLY", 
+                                                                     "DYS AWY FRM WRK & RESTRCTD ACT", 
+                                                                     "DAYS RESTRICTED ACTIVITY ONLY", 
+                                                                     "FATALITY", 
+                                                                     "PERM TOT OR PERM PRTL DISABLTY", 
+                                                                     "NO VALUE FOUND")))
+na.and.no.value.index <- is.element(actual.accidents$inj_degr_desc, "NO VALUE FOUND") & is.na(actual.accidents$days_lost)
+actual.accidents[na.and.no.value.index, "days_restrict"] <- 0
+actual.accidents[na.and.no.value.index, "days_lost"] <- 0
+actual.accidents[which(actual.accidents$inj_degr_desc == "FATALITY"), "days_lost"] <- 300
+actual.accidents$ai_dt_actual_date <- strftime(actual.accidents$ai_dt, "%F")
+
+day.level.accidents <- actual.accidents %>% group_by(mine_id, ai_dt) %>% summarize(day_level_days_lost = sum(days_lost, na.rm = T))
+quarter.level.accidents <- actual.accidents %>% group_by(mine_id, cal_qtr, cal_yr) %>% summarize(quarter_level_days_lost = sum(days_lost, na.rm = T))
+```
+
+```{r accident calculation}
+
+longest.period <- 3
+actual.start.year <- 2000
+start.year <- 2000 - longest.period
+mines.with.accidents.post.start.year <- (actual.accidents %>% filter(cal_yr >= actual.start.year))$mine_id %>% unique()
+end.year <- 2015
+number.years <- end.year - start.year + 1
+
+roll_over <- function(longest.period, actual.start.year, start.year, )
+## Challenge: fill in nonpresent values for mines with 0 days lost
+## For example, mine could have just not had a day lost, but that won't show up in `quarter.level.accidents`
+## 1. First, initialize all blank data frame by figuring out final structure (we know exactly what pattern mine_id, quarter, and year should follow
+##    a particular set of repetitions)
+## 2. Anti-join will only keep data from the set of keys not found in the actual data
+## 3. Then we can just join the two sets of rows!
+blank.full.quarter.level.days_lost <- data.frame(mine_id = rep(mines.with.accidents.post.start.year, each = 4 * number.years),
+                                                 quarter = rep(1:4, times = length(mines.with.accidents.post.start.year) * number.years),
+                                                 year = rep(rep(start.year:end.year, times = rep(4, number.years)),
+                                                            times = length(mines.with.accidents.post.start.year)),
+                                                 num.days.lost = 0)
+full.quarter.level.days_lost <- anti_join(blank.full.quarter.level.days_lost, quarter.level.accidents,
+                                          by = c("mine_id" = "mine_id", "quarter" = "cal_qtr", "year" = "cal_yr"))
+full.quarter.level.days_lost <- rbind(full.quarter.level.days_lost,
+                                      quarter.level.accidents %>% 
+                                        select(mine_id, quarter = cal_qtr,
+                                               year = cal_yr, num.days.lost = quarter_level_days_lost) %>% 
+                                        data.frame() %>% filter(year >= start.year) %>% 
+                                        filter(year <= end.year)) %>% arrange(mine_id, year, quarter)
+
+
+## Challenge: Calculating past period statistics
+## lag will put value of index n - 1 at index n
+## roll_sum will do a sum from the specified number of previous rows and put NA's at the beginning
+## We filter with actual.start.year so there are no NA's. 
+##   (The year that data is ready and the year that data needs to start being used are different.)
+full.quarter.level.days_lost <- full.quarter.level.days_lost %>% 
+                                group_by(mine_id) %>%
+                                mutate(last.quarter = lag(num.days.lost),
+                                       last.year = roll_sum(lag(num.days.lost), 4, align = "right", fill = NA),
+                                       last.three.years = roll_sum(lag(num.days.lost), 12, align = "right", fill = NA)) %>%
+                                filter(year >= actual.start.year)
+
+full.quarter.level.days_lost
+#664128
+```
+```{r violation cleaning}
+violations <- mshs_violations
+quarter.level.violations <- violations %>% group_by(mine_id, cal_qtr, cal_yr) %>% 
+                                            summarize(quarter_level_violation = n())
+
+
+
+longest.period <- 3
+actual.start.year <- 2000
+start.year <- 2000 - longest.period
+mines.with.violation.post.start.year <- (violations %>% filter(cal_yr >= actual.start.year))$mine_id %>% unique()
+end.year <- 2015
+number.years <- end.year - start.year + 1
+
+
+## Challenge: fill in nonpresent values for mines with 0 days lost
+## For example, mine could have just not had a day lost, but that won't show up in `quarter.level.accidents`
+## 1. First, initialize all blank data frame by figuring out final structure (we know exactly what pattern mine_id, quarter, and year should follow
+##    a particular set of repetitions)
+## 2. Anti-join will only keep data from the set of keys not found in the actual data
+## 3. Then we can just join the two sets of rows!
+blank.full.quarter.level.violations <- data.frame(mine_id = rep(mines.with.violation.post.start.year, each = 4 * number.years),
+                                                 quarter = rep(1:4, times = length(mines.with.violation.post.start.year) * number.years),
+                                                 year = rep(rep(start.year:end.year, times = rep(4, number.years)),
+                                                            times = length(mines.with.violation.post.start.year)),
+                                                 viol.quantity = 0)
+full.quarter.level.violations <- anti_join(blank.full.quarter.level.violations, quarter.level.violations,
+                                          by = c("mine_id" = "mine_id", "quarter" = "cal_qtr", "year" = "cal_yr"))
+full.quarter.level.violations <- rbind(full.quarter.level.violations,
+                                       quarter.level.violations %>% 
+                                        select(mine_id, quarter = cal_qtr,
+                                               year = cal_yr, viol.quantity = quarter_level_violation) %>% 
+                                        data.frame() %>% filter(year >= start.year) %>% 
+                                        filter(year <= end.year)) %>% arrange(mine_id, year, quarter)
+
+
+## Challenge: Calculating past period statistics
+## lag will put value of index n - 1 at index n
+## roll_sum will do a sum from the specified number of previous rows and put NA's at the beginning
+## We filter with actual.start.year so there are no NA's. 
+##   (The year that data is ready and the year that data needs to start being used are different.)
+full.quarter.level.violations <- full.quarter.level.violations %>% 
+  group_by(mine_id) %>%
+  mutate(last.quarter = lag(viol.quantity),
+         last.year = roll_sum(lag(viol.quantity), 4, align = "right", fill = NA),
+         last.three.years = roll_sum(lag(viol.quantity), 12, align = "right", fill = NA)) %>%
+  filter(year >= actual.start.year)
+
+full.quarter.level.violations
+
+```
+```{r Compiling data}
+quarter.days_lost.violation <- merge(full.quarter.level.days_lost, full.quarter.level.violations , by = c("mine_id","year","quarter"),all=TRUE)
+quarter.days_lost.violation[is.na(test)] <- 0
+quarter.days_lost.violation
+```
+
+```{r Saving Data into RData files}
+write.csv(full.quarter.level.days_lost, "./A New Hope/quarter_level_days_lost.csv")
+write.csv(full.quarter.level.violations, "./A New Hope/quarter_level_violations.csv")
+write.csv(quarter.days_lost.violation, "./A New Hope/quarter_days_lost_violation.csv")
+
+
+save(full.quarter.level.days_lost,file = "./A New Hope/quarter_level_days_lost.RData")
+save(full.quarter.level.violations, file = "./A New Hope/quarter_level_violations.RData")
+save(quarter.days_lost.violation, file = "./A New Hope/quarter_days_lost_violation.RData")
+```
+
+
+```{r}
+test <- quarter.days_lost.violation %>% select(num.days.lost,last.quarter.x,last.year.x,last.three.years.x,last.quarter.y,last.year.y, last.three.years.y)
+
+pairs(test)
+```
+removing rows containing more than 50% zeros 
+```{r}
+
+reduced_both <- lm(num.days.lost~last.quarter.x
+                 +last.year.x
+                 +last.three.years.x
+                 +last.quarter.y
+                 +last.year.y
+                 +last.three.years.y,
+                 data = quarter.days_lost.violation)
+summary(reduced_both)
+```
+```{r}
+reduce_days_lost <- lm(num.days.lost~last.quarter.x
+                 +last.year.x
+                 +last.three.years.x,
+                 data = quarter.days_lost.violation)
+summary(reduce_days_lost)
+```
+
+```{r}
+reduce_days_lost <- lm(num.days.lost~factor(last.year.x),
+                 data = quarter.days_lost.violation)
+summary(reduce_days_lost)
+
+plot(num.days.lost~last.quarter.x,data=quarter.days_lost.violation)
+```
+
+```{r}
+temp <- quarter.days_lost.violation %>% filter(last.quarter.x != 0, last.quarter.y != 0,
+                                                 last.year.x != 0, last.year.y != 0,
+                                                 last.three.years.x != 0, last.three.years.y != 0)
+plot(num.days.lost~last.quarter.x,data=temp)
+
+reduced_both_remove_0 <- lm(num.days.lost~last.quarter.x
+                 +last.year.x
+                 +last.three.years.x
+                 +last.quarter.y
+                 +last.year.y
+                 +last.three.years.y,
+                 data = temp)
+summary(reduced_both_remove_0)
+
+```
+
+```{r}
+over_200 <- quarter.days_lost.violation %>% filter(last.quarter.x > 200)
+under_200 <- quarter.days_lost.violation %>% filter(last.quarter.x < 200)
+
+
+#historgram of over 200 days lost from last year
+
+qplot(num.days.lost, data=over_200, geom="histogram")
+plot(num.days.lost ~ last.quarter.x,data = over_200)
+plot(num.days.lost ~ last.quarter.x,data = under_200)
+
+```
+
+
+
+```{r roll_over}
+roll_over <- function(data, quarter.level, longest.period, actual.start.year,end.year){
+  start.year <- actual.start.year-longest.period
+  
+  number.years <-  end.year - start.year + 1
+  
+  mines.with.accidents.post.start.year <- (data %>% filter(cal_yr >= actual.start.year))$mine_id %>% unique()
+  
+  blank.full.quarter.level.days_lost <- data.frame(mine_id = rep(mines.with.accidents.post.start.year, each = 4 * number.years),
+                                                 quarter = rep(1:4, times = length(mines.with.accidents.post.start.year) * number.years),
+                                                 year = rep(rep(start.year:end.year, times = rep(4, number.years)),
+                                                            times = length(mines.with.accidents.post.start.year)),
+                                                 num.days.lost = 0)
+  full.quarter.level.days_lost <- anti_join(blank.full.quarter.level.days_lost, quarter.level,
+                                            by = c("mine_id" = "mine_id", "quarter" = "cal_qtr", "year" = "cal_yr"))
+  full.quarter.level.days_lost <- rbind(full.quarter.level.days_lost,
+                                        quarter.level %>% 
+                                          select(mine_id, quarter = cal_qtr,
+                                                 year = cal_yr, num.days.lost = base) %>% 
+                                          data.frame() %>% filter(year >= start.year) %>% 
+                                          filter(year <= end.year)) %>% arrange(mine_id, year, quarter)
+  
+  
+  ## Challenge: Calculating past period statistics
+  ## lag will put value of index n - 1 at index n
+  ## roll_sum will do a sum from the specified number of previous rows and put NA's at the beginning
+  ## We filter with actual.start.year so there are no NA's. 
+  ##   (The year that data is ready and the year that data needs to start being used are different.)
+  full.quarter.level.days_lost <- full.quarter.level.days_lost %>% 
+                                  group_by(mine_id) %>%
+                                  mutate(last.quarter = lag(num.days.lost),
+                                         last.year = roll_sum(lag(num.days.lost), 4, align = "right", fill = NA),
+                                         last.three.years = roll_sum(lag(num.days.lost), 12, align = "right", fill = NA)) %>%
+                                  filter(year >= actual.start.year)
+  
+  return(full.quarter.level.days_lost)
+}
+```
+
+
+
+```{r full quarter}
+
+longest.period <- 3
+actual.start.year <- 2000
+end.year <- 2015
+
+
+quarter.level.accidents <- actual.accidents %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
+                                            summarize(base = sum(days_lost, na.rm = T))
+accident_rollover <- roll_over(actual.accidents,
+                               quarter.level.accidents,
+                               longest.period,
+                               actual.start.year,
+                               end.year)
+accident_rollover
+
+
+
+quarter.level.violations <- violations %>% group_by(mine_id, cal_qtr, cal_yr) %>% 
+                                            summarize(base = n())
+violation_rollover <- roll_over(violations,
+                                quarter.level.violations,
+                                longest.period,
+                                actual.start.year,
+                                end.year)
+violation_rollover
+
+
+all.quarter.level.accidents <- accidents %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
+                                            summarize(base = sum(days_lost, na.rm = T) + sum(days_restrict, na.rm = T))
+all_accident_rollover <- roll_over(accidents,
+                                   all.quarter.level.accidents,
+                                   longest.period,
+                                   1984,
+                                   2016)
+all_accident_rollover
+
+
+all_violation_rollover <- roll_over(accidents,
+                                   quarter.level.violations,
+                                   longest.period,
+                                   1984,
+                                   2016)
+all_violation_rollover
+
+```
+
+
+
+```{r}
+quaarter.days_lost.violation <- merge(accident_rollover, violation_rollover, by = c("mine_id","year","quarter"),all=TRUE)
+quarter.days_lost.violation[is.na(quarter.days_lost.violation)] <- 0
+quarter.days_lost.violation
+
+
+all_accident_violation_rollover <- merge(all_accident_rollover,all_violation_rollover, by = c("mine_id","year","quarter"),all=TRUE)
+all_accident_violation_rollover[is.na(all_accident_violation_rollover)]<-0
+all_accident_violation_rollover
+
+#remove start year
+for (x in unique(all_accident_rollover$mine_id)){
+  temp <- all_accident_violation_rollover %>% filter(mine_id==x)
+  i <- 1
+  while( sum(temp[i,3:11]) == 0){
+    i = i+1
+  }
+  if(i != 1){
+    print(x)
+    print(i)
+    temp <- temp[-1:i,]
+  }
+}
+
+  #remove end year
+for (mine_id in unique(all_accident_rollover$mine_id)){
+  temp <- all_accident_violation_rollover %>% filter(mine_id==x)
+  i <- nrow(temp)
+  while( sum(temp[i,3:11]) == 0){
+    i = i-1
+  }
+  if(i != nrow(temp)){
+    print(x)
+    print(i)
+    temp <- temp[-i:nrow(temp),]
+  }
+}
+
+```
+
