@@ -33,7 +33,7 @@ actual.accidents[na.and.no.value.index, "days_restrict"] <- 0
 actual.accidents[na.and.no.value.index, "days_lost"] <- 0
 actual.accidents[which(actual.accidents$inj_degr_desc == "FATALITY"), "deaths"] <- 1
 actual.accidents$ai_dt_actual_date <- strftime(actual.accidents$ai_dt, "%F")
-rm(na.and.no.value.index)
+rm(na.and.no.value.index, accidents)
 
 quarter.level.num.days.lost <- actual.accidents %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
   summarize(base = sum(days_lost, na.rm = T))
@@ -67,17 +67,27 @@ rm(quarter.level.num.deaths)
 # cleanup violations
 active_violation_rollover = full.days_lost.accidents.date %>%
   select(mine_id, year, quarter, viol.quantity, last.quarter.y, last.year.y, last.three.years.y)
+active_violation_rollover$active <- TRUE
+
 
 # join accidents and violation
 temp <- merge(days_lost_rollover, days_restrict_rollover, by = c("mine_id","year","quarter"),all=TRUE)
 temp[is.na(temp)] <- 0
 temp <- merge(temp, death_rollover, by = c("mine_id","year","quarter"),all=TRUE)
 temp[is.na(temp)] <- 0
-temp <- merge(temp, active_violation_rollover, by = c("mine_id","year","quarter"),all.y=TRUE)
+
+temp <- merge(temp, active_violation_rollover, by = c("mine_id","year","quarter"),all.x=TRUE)
+temp[is.na(temp$active),]$active <- FALSE
 temp[is.na(temp)] <- 0
 
 # result
 complete.active.quarters <- temp
+colnames(complete.active.quarters) <- 
+  c("mine_id", "year", "quarter", 
+    "num.days.lost", "last.quarter.lost", "last.year.lost", "last.three.years.lost",
+    "num.days.restrict", "last.quarter.restrict", "last.year.restrict", "last.three.years.restrict",
+    "num.days.death", "last.quarter.death", "last.year.death", "last.three.years.death",
+    "viol.quantity", "last.quarter.viol", "last.year.viol", "last.three.years.viol",
+    "active")
+complete.active.quarters <- complete.active.quarters[, c(1:3, 20, 4:19)]
 save(complete.active.quarters, file="./San Antonio/result.RData")
-
-
