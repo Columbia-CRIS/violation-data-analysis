@@ -10,8 +10,11 @@ library(RcppRoll)
 setwd("~/Git/violation-data-analysis")
 
 # load accidents, violations, and function roll_over
-if(!exists("accidents") | !exists("full.days_lost.accidents.date") | !exists("roll_over")) {
-  load("./San Antonio/raw_accidents_fine_viol.RData")
+if(!exists("accidents") | 
+   !exists("full.days_lost.accidents.date") | 
+   !exists("roll_over") | 
+   !exists("mines")) {
+  load("./San Antonio/data/secret_ingredients.RData")
   print("raw RData loaded")
 }
 
@@ -80,14 +83,24 @@ temp <- merge(temp, active_violation_rollover, by = c("mine_id","year","quarter"
 temp[is.na(temp$active),]$active <- FALSE
 temp[is.na(temp)] <- 0
 
+temp <- merge(temp, mines, by = "mine_id", all.x=TRUE)
+
 # result
 complete.active.quarters <- temp
 colnames(complete.active.quarters) <- 
   c("mine_id", "year", "quarter", 
     "num.days.lost", "last.quarter.lost", "last.year.lost", "last.three.years.lost",
     "num.days.restrict", "last.quarter.restrict", "last.year.restrict", "last.three.years.restrict",
-    "num.days.death", "last.quarter.death", "last.year.death", "last.three.years.death",
+    "num.death", "last.quarter.death", "last.year.death", "last.three.years.death",
     "viol.quantity", "last.quarter.viol", "last.year.viol", "last.three.years.viol",
-    "active")
-complete.active.quarters <- complete.active.quarters[, c(1:3, 20, 4:19)]
-save(complete.active.quarters, file="./San Antonio/result.RData")
+    "active", "mine.name")
+complete.active.quarters <- complete.active.quarters[, c(1, 21, 2:3, 20, 4:19)]
+
+save(complete.active.quarters, file="./San Antonio/output/result.RData")
+
+# http://stats.stackexchange.com/questions/59250/how-to-interpret-the-output-of-the-summary-method-for-an-lm-object-in-r
+summary(lm(25*num.death+1*num.days.lost+0.7*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active)))
