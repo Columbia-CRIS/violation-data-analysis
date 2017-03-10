@@ -1,0 +1,32 @@
+---
+title: "Simple Linear Models"
+author: "Yu"
+date: "3/9/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
+```
+
+## Simple Linear Model
+
+Read these two links first: [How to interpret regression p-values](http://blog.minitab.com/blog/adventures-in-statistics-2/how-to-interpret-regression-analysis-results-p-values-and-coefficients) and
+[How to interpret the output of the summary() method for an lm object](http://stats.stackexchange.com/questions/59250/how-to-interpret-the-output-of-the-summary-method-for-an-lm-object-in-r)
+
+- lm on num of days lost or restricted:
+```{r echo=FALSE}
+load("./San Antonio/output/result.RData")
+num.days.lm <- lm(0*num.death+1*num.days.lost+1*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active))
+summary(num.days.lm)
+```
+- lm on num of deaths:
+```{r echo=FALSE}
+summary(lm(num.death~last.three.years.lost+last.quarter.viol+last.year.viol, data=complete.active.quarters %>% filter(active)))
+```

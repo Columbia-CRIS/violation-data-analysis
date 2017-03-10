@@ -14,17 +14,24 @@ knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
 ```{r top 10 based on num.death}
 load("./San Antonio/output/result.RData")
 complete.active.quarters %>% arrange(desc(num.death)) %>% select(mine_id, mine.name, year, quarter, num.death) %>% head(10)
 ```
 
-```{r top 10 based on num.days.lost}
+```{r top 10 based on certain mine}
 complete.active.quarters %>% filter(mine_id == 101322) %>% select(mine.name, year, quarter, last.year.lost) %>% head(10)
+```
+
+```{r simple lm}
+load("./San Antonio/output/result.RData")
+summary(lm(1*num.death+0*num.days.lost+0*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active)))
+
+summary(lm(num.death~last.three.years.lost+last.quarter.viol+last.year.viol, data=complete.active.quarters %>% filter(active)))
 ```
 
 ## Including Plots

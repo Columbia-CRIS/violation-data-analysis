@@ -98,10 +98,4 @@ complete.active.quarters <- complete.active.quarters[, c(1, 21, 2:3, 20, 4:19)]
 
 save(complete.active.quarters, file="./San Antonio/output/result.RData")
 
-# http://blog.minitab.com/blog/adventures-in-statistics-2/how-to-interpret-regression-analysis-results-p-values-and-coefficients
-# http://stats.stackexchange.com/questions/59250/how-to-interpret-the-output-of-the-summary-method-for-an-lm-object-in-r
-summary(lm(25*num.death+1*num.days.lost+0.7*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
-           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
-           +last.quarter.viol+last.year.viol+last.three.years.viol
-           +last.quarter.death+last.year.death+last.three.years.death, 
-           data=complete.active.quarters %>% filter(active)))
+# see simple_lm.R for simple lm
