@@ -1,0 +1,158 @@
+---
+title: "Presentation Materials"
+author: "Yu"
+date: "3/12/2017"
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
+```
+
+## Upper Big Branch and Other Deadliest Mine
+
+Below is a list of the top 10 mine-quarters based on number of deaths:
+
+```{r echo=FALSE}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+top.deaths <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.death)) %>% select(mine.name, mine_id, year, quarter, num.death)
+head(top.deaths, 10)
+```
+Mine name: [The Upper Big Branch Mine (4608436)](https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster)
+
+```{r echo=FALSE}
+library(ggplot2)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+upper.big.branch <- complete.active.quarters %>% filter(mine_id == 4608436 & (year < 2010 | (year == 2010 & quarter < 2))) %>%
+  select(year, quarter, num.days.lost, viol.quantity)
+# ggplot() +
+#   geom_line(data = upper.big.branch, aes(x = year + quarter / 4, y = viol.quantity), color = "red") +
+#   geom_line(data = upper.big.branch, aes(x = year + quarter / 4, y = num.days.lost), color = "green")
+qplot(x=year + quarter / 4, y=viol.quantity, data=upper.big.branch, geom = "line",
+     main = "Upper Big Branch: Number of Quarterly Violations",
+     xlab = "Year", ylab = "Count")
+```
+
+Mine name: [No. 5 Mine (101322)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
+
+```{r echo=FALSE}
+library(ggplot2)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+no.5.mine <- complete.active.quarters %>% filter(mine_id == 101322 & (year < 2001 | (year == 2001 & quarter < 3))) %>%
+  select(year, quarter, num.days.lost, viol.quantity)
+qplot(x=year + quarter / 4, y=viol.quantity, data=no.5.mine, geom = "line",
+     main = "No. 5 Mine: Number of Quarterly Violations",
+     xlab = "Year", ylab = "Count")
+```
+
+Mine name: [Darby Mine No. 1 (1518185)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
+
+```{r echo=FALSE}
+library(ggplot2)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+darby.mine <- complete.active.quarters %>% filter(mine_id == 1518185 & (year < 2006 | (year == 2006 & quarter < 2))) %>%
+  select(year, quarter, num.days.lost, viol.quantity)
+qplot(x=year + quarter / 4, y=viol.quantity, data=darby.mine, geom = "line",
+     main = "Darby Mine No. 1: Number of Quarterly Violations",
+     xlab = "Year", ylab = "Count")
+```
+
+Mine name: [Gibson Mine	(1202215)](http://coaldiver.org/msha-id/1202215)
+
+```{r echo=FALSE}
+library(ggplot2)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+gibson.mine <- complete.active.quarters %>% filter(mine_id == 1202215 & (year < 2007 | (year == 2007 & quarter < 3))) %>%
+  select(year, quarter, num.days.lost, viol.quantity)
+qplot(x=year + quarter / 4, y=viol.quantity, data=gibson.mine, geom = "line",
+     main = "Gibson Mine: Number of Quarterly Violations",
+     xlab = "Year", ylab = "Count")
+```
+
+## Number of Days Lost not Implying Severity (e.g., New Era Mine)
+Link: https://arlweb.msha.gov/drs/ASP/MineAction.asp
+
+Mine name: [The American Coal Company New Era Mine (1102752)](http://www.stltoday.com/business/local/murray-energy-to-close-galatia-mine-next-year/article_aecf6963-c5ed-5edb-abd1-db6c5537a540.html)
+
+Among the top 10 mine-quarters based on number of days lost,
+```{r echo=FALSE}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+top.days.lost <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost)) %>% select(mine.name, year, quarter, num.days.lost)
+head(top.days.lost, 10)
+```
+the "American Coal Company New Era Mine" take 5 spots.
+Let's take a look at its second quarter of 2005:
+```{r echo=FALSE}
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+new.era <- accidents %>% 
+  filter(mine_id == 1102752 & cal_yr == 2005 & cal_qtr == 2) %>% 
+  arrange(desc(days_lost)) %>% 
+  select(
+    ai_dt, 
+    days_lost, 
+    ai_class_desc
+    #ai_occ_desc 
+    #ai_narr
+    ) 
+head(new.era)
+```
+In particular, the top accident was:
+```{r echo=FALSE}
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+new.era.top.accidents <- accidents %>% 
+  filter(mine_id == 1102752 & cal_yr == 2005 & cal_qtr == 2) %>% 
+  arrange(desc(days_lost)) %>% 
+  select(
+    ai_dt, 
+    days_lost, 
+    ai_class_desc,
+    ai_occ_desc, 
+    ai_narr
+    ) 
+print(as.character(new.era.top.accidents$ai_narr[1]))
+```
+and the second to top accident was:
+```{r echo=FALSE}
+if(!exists("new.era.top.accidents")){
+ if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+new.era.top.accidents <- accidents %>% 
+  filter(mine_id == 1102752 & cal_yr == 2005 & cal_qtr == 2) %>% 
+  arrange(desc(days_lost)) %>% 
+  select(
+    ai_dt, 
+    days_lost, 
+    ai_class_desc,
+    ai_occ_desc, 
+    ai_narr
+    )  
+}
+print(as.character(new.era.top.accidents$ai_narr[2]))
+```
+
+## Simple Linear Model
+
+The following linear model tests a few predictors and their ability to predict number of days lost or restircted:
+```{r echo=FALSE}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+num.days.lm <- lm(0*num.death+1*num.days.lost+1*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active))
+summary(num.days.lm)
+```
+The following linear model tests a few predictors and their ability to predict number of deaths:
+```{r echo=FALSE}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+num.deaths.lm <- lm(1*num.death+0*num.days.lost+0*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active))
+summary(num.deaths.lm)
+```
