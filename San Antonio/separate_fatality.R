@@ -32,13 +32,13 @@ actual.accidents <- accidents %>% filter(is.element(inj_degr_desc, c("DAYS AWAY 
                                                                      "NO VALUE FOUND")))
 actual.accidents["deaths"] <- 0
 actual.accidents["perm_dis"] <- 0
-na.and.no.value.index <- is.element(actual.accidents$inj_degr_desc, "NO VALUE FOUND") & is.na(actual.accidents$days_lost)
-actual.accidents[na.and.no.value.index, "days_restrict"] <- 0
-actual.accidents[na.and.no.value.index, "days_lost"] <- 0
+# na.and.no.value.index <- is.element(actual.accidents$inj_degr_desc, "NO VALUE FOUND") & is.na(actual.accidents$days_lost)
+actual.accidents[is.na(actual.accidents$days_lost), "days_lost"] <- 0
+actual.accidents[is.na(actual.accidents$days_restrict), "days_restrict"] <- 0
 actual.accidents[which(actual.accidents$inj_degr_desc == "FATALITY"), "deaths"] <- 1
 actual.accidents[which(actual.accidents$inj_degr_desc == "PERM TOT OR PERM PRTL DISABLTY"), "perm_dis"] <- 1
 actual.accidents$ai_dt_actual_date <- strftime(actual.accidents$ai_dt, "%F")
-rm(na.and.no.value.index, accidents)
+# rm(na.and.no.value.index, accidents)
 
 quarter.level.num.days.lost <- actual.accidents %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
   summarize(base = sum(days_lost, na.rm = T))
