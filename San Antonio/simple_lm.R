@@ -36,7 +36,7 @@ plot(ecdf(x = train$num.days.lost))
 # 
 # print(msha_glm)
 
-sapply(train, function(x) sum(is.na(x)))
+sapply(complete.active.quarters, function(x) sum(is.na(x)))
 
 # lm on composite num.days.lost
 summary(lm(30*num.death+1*num.days.lost+1*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost

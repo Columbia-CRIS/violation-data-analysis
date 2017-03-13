@@ -48,8 +48,8 @@ days_lost_rollover <- roll_over(actual.accidents,
                                 actual.start.year,
                                 end.year)
 colnames(days_lost_rollover) <- c(
-  "mine_id", "year", "quarter", "num.days.lost",
-  "last.quarter.lost", "last.year.lost", "last.three.years.lost"
+  "mine_id", "quarter", "year",
+  "num.days.lost", "last.quarter.lost", "last.year.lost", "last.three.years.lost"
   )
 rm(quarter.level.num.days.lost)
 
@@ -61,7 +61,7 @@ days_restrict_rollover <- roll_over(actual.accidents,
                                 actual.start.year,
                                 end.year)
 colnames(days_restrict_rollover) <- c(
-  "mine_id", "year", "quarter", 
+  "mine_id", "quarter", "year",
   "num.days.restrict", "last.quarter.restrict", "last.year.restrict", "last.three.years.restrict"
 )
 rm(quarter.level.num.days.restrict)
@@ -74,7 +74,7 @@ death_rollover <- roll_over(actual.accidents,
                                actual.start.year,
                                end.year)
 colnames(death_rollover) <- c(
-  "mine_id", "year", "quarter", 
+  "mine_id", "quarter", "year",
   "num.death", "last.quarter.death", "last.year.death", "last.three.years.death"
 )
 rm(quarter.level.num.deaths)
@@ -87,7 +87,7 @@ dis_rollover <- roll_over(actual.accidents,
                             actual.start.year,
                             end.year)
 colnames(dis_rollover) <- c(
-  "mine_id", "year", "quarter", 
+  "mine_id", "quarter", "year", 
   "num.dis", "last.quarter.dis", "last.year.dis", "last.three.years.dis"
 )
 rm(quarter.level.num.perm_dis)
