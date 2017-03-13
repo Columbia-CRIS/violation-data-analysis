@@ -11,10 +11,11 @@ setwd("~/Git/violation-data-analysis")
 
 # load accidents, violations, and function roll_over
 if(!exists("accidents") | 
-   !exists("full.days_lost.accidents.date") | 
+   !exists("violations.lite") | 
    !exists("roll_over") | 
    !exists("mines")) {
   load("./San Antonio/data/secret_ingredients.RData")
+  load("./San Antonio/data/albert_violation.RData")
   print("raw RData loaded")
 }
 
@@ -32,13 +33,11 @@ actual.accidents <- accidents %>% filter(is.element(inj_degr_desc, c("DAYS AWAY 
                                                                      "NO VALUE FOUND")))
 actual.accidents["deaths"] <- 0
 actual.accidents["perm_dis"] <- 0
-# na.and.no.value.index <- is.element(actual.accidents$inj_degr_desc, "NO VALUE FOUND") & is.na(actual.accidents$days_lost)
 actual.accidents[is.na(actual.accidents$days_lost), "days_lost"] <- 0
 actual.accidents[is.na(actual.accidents$days_restrict), "days_restrict"] <- 0
 actual.accidents[which(actual.accidents$inj_degr_desc == "FATALITY"), "deaths"] <- 1
 actual.accidents[which(actual.accidents$inj_degr_desc == "PERM TOT OR PERM PRTL DISABLTY"), "perm_dis"] <- 1
 actual.accidents$ai_dt_actual_date <- strftime(actual.accidents$ai_dt, "%F")
-# rm(na.and.no.value.index, accidents)
 
 quarter.level.num.days.lost <- actual.accidents %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
   summarize(base = sum(days_lost, na.rm = T))
@@ -92,15 +91,28 @@ colnames(dis_rollover) <- c(
 )
 rm(quarter.level.num.perm_dis)
 
-# cleanup violations
-active_violation_rollover = full.days_lost.accidents.date %>%
-  select(mine_id, year, quarter, viol.quantity, last.quarter.y, last.year.y, last.three.years.y)
-active_violation_rollover$active <- TRUE
-colnames(active_violation_rollover) <- c(
-  "mine_id", "year", "quarter", 
-  "viol.quantity", "last.quarter.viol", "last.year.viol", "last.three.years.viol",
-  "active"
+quarter.level.viol.quantity <- violations.lite %>% group_by(mine_id, cal_qtr, cal_yr)%>% 
+  summarize(base = sum(violation, na.rm = T))
+violation_rollover <- roll_over(violations.lite,
+                          quarter.level.viol.quantity,
+                          longest.period,
+                          actual.start.year,
+                          end.year)
+colnames(violation_rollover) <- c(
+  "mine_id", "quarter", "year", 
+  "viol.quantity", "last.quarter.viol", "last.year.viol", "last.three.years.viol"
 )
+rm(quarter.level.viol.quantity)
+
+# # cleanup violations
+# active_violation_rollover = full.days_lost.accidents.date %>%
+#   select(mine_id, year, quarter, viol.quantity, last.quarter.y, last.year.y, last.three.years.y)
+# active_violation_rollover$active <- TRUE
+# colnames(active_violation_rollover) <- c(
+#   "mine_id", "year", "quarter", 
+#   "viol.quantity", "last.quarter.viol", "last.year.viol", "last.three.years.viol",
+#   "active"
+# )
 
 
 # join accidents and violation
@@ -110,10 +122,36 @@ temp <- merge(temp, death_rollover, by = c("mine_id","year","quarter"),all=TRUE)
 temp[is.na(temp)] <- 0
 temp <- merge(temp, dis_rollover, by = c("mine_id","year","quarter"),all=TRUE)
 temp[is.na(temp)] <- 0
-
-temp <- merge(temp, active_violation_rollover, by = c("mine_id","year","quarter"),all.x=TRUE)
-temp[is.na(temp$active),]$active <- FALSE
+temp <- merge(temp, violation_rollover, by = c("mine_id","year","quarter"),all.x=TRUE)
 temp[is.na(temp)] <- 0
+
+# assign TRUE to active as long as there are some values
+temp <- temp %>% mutate(
+  active = ifelse(
+    num.days.lost + last.quarter.lost + last.year.lost + last.three.years.lost +
+    num.days.restrict + last.quarter.restrict + last.year.restrict + last.three.years.restrict +
+    num.death + last.quarter.death + last.year.death + last.three.years.death +
+    num.dis + last.quarter.dis + last.year.dis + last.three.years.dis + 
+    viol.quantity + last.quarter.viol + last.year.viol + last.three.years.viol
+                  > 0, TRUE, FALSE
+                  )
+  )
+
+# temp <- merge(temp, active_violation_rollover, by = c("mine_id","year","quarter"),all.x=TRUE)
+# the code below is to make sure that whenever there is something for a row, it is active
+# temp <- temp %>% mutate(
+#   active = ifelse(is.na(active) &
+#                     num.days.lost + num.days.restrict + num.death + num.dis +
+#                     last.quarter.lost + last.quarter.restrict + last.quarter.death + last.quarter.dis +
+#                     last.year.lost + last.year.restrict + last.quarter.death + last.quarter.dis +
+#                     last.three.years.lost + last.three.years.restrict + last.three.years.death + last.three.years.dis
+#                   > 0, TRUE,
+#                   ifelse(is.na(active),
+#                          FALSE, 
+#                          ifelse(active, TRUE, FALSE))
+#   )
+#     )
+# temp[is.na(temp)] <- 0
 
 colnames(mines) <- c("mine_id", "mine.name")
 temp <- merge(temp, mines, by = "mine_id", all.x=TRUE)
