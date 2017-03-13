@@ -23,7 +23,7 @@ if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData"
 top.deaths <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.death)) %>% select(mine.name, mine_id, year, quarter, num.death)
 head(top.deaths, 10)
 ```
-Mine name: [The Upper Big Branch Mine (4608436)](https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster)
+[The Upper Big Branch Mine (4608436)](https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster)
 
 ```{r echo=FALSE}
 library(ggplot2)
@@ -38,7 +38,7 @@ qplot(x=year + quarter / 4, y=viol.quantity, data=upper.big.branch, geom = "line
      xlab = "Year", ylab = "Count")
 ```
 
-Mine name: [No. 5 Mine (101322)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
+[No. 5 Mine (101322)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
 
 ```{r echo=FALSE}
 library(ggplot2)
@@ -50,7 +50,7 @@ qplot(x=year + quarter / 4, y=viol.quantity, data=no.5.mine, geom = "line",
      xlab = "Year", ylab = "Count")
 ```
 
-Mine name: [Darby Mine No. 1 (1518185)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
+[Darby Mine No. 1 (1518185)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
 
 ```{r echo=FALSE}
 library(ggplot2)
@@ -62,7 +62,7 @@ qplot(x=year + quarter / 4, y=viol.quantity, data=darby.mine, geom = "line",
      xlab = "Year", ylab = "Count")
 ```
 
-Mine name: [Gibson Mine	(1202215)](http://coaldiver.org/msha-id/1202215)
+[Gibson Mine	(1202215)](http://coaldiver.org/msha-id/1202215)
 
 ```{r echo=FALSE}
 library(ggplot2)
@@ -75,9 +75,7 @@ qplot(x=year + quarter / 4, y=viol.quantity, data=gibson.mine, geom = "line",
 ```
 
 ## Number of Days Lost not Implying Severity (e.g., New Era Mine)
-Link: https://arlweb.msha.gov/drs/ASP/MineAction.asp
-
-Mine name: [The American Coal Company New Era Mine (1102752)](http://www.stltoday.com/business/local/murray-energy-to-close-galatia-mine-next-year/article_aecf6963-c5ed-5edb-abd1-db6c5537a540.html)
+[The American Coal Company New Era Mine (1102752)](http://www.stltoday.com/business/local/murray-energy-to-close-galatia-mine-next-year/article_aecf6963-c5ed-5edb-abd1-db6c5537a540.html)
 
 Among the top 10 mine-quarters based on number of days lost,
 ```{r echo=FALSE}
