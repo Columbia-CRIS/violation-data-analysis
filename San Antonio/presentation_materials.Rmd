@@ -1,7 +1,7 @@
 ---
 title: "Presentation Materials"
 author: "Yu"
-date: "3/12/2017"
+date: "3/13/2017"
 output: 
   html_document:
     toc: true
@@ -61,13 +61,32 @@ qplot(x = year, y = count, data = yearly.viol, geom = "line",
       xlab = "Year", ylab = "count")
 ```
 
-#### [Sago Mine (4608791, clearly wrong)](https://en.wikipedia.org/wiki/Sago_Mine_disaster)
+#### [No. 5 Mine (101322)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
+
+Usable violation data only date back to 2000.
+
+#### [Sago Mine (4608791)](https://en.wikipedia.org/wiki/Sago_Mine_disaster)
 
 ```{r sago, echo=FALSE}
 library(ggplot2)
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 4608791 & year < 2006) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = "line",
+      main = "Number of Yearly Violations",
+      xlab = "Year", ylab = "count")
+```
+
+#### [Crandall Canyon Mine (4201715)](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0ahUKEwjOyeGnvtTSAhVN42MKHdtyD7UQFggnMAE&url=http%3A%2F%2Fwww.deseretnews.com%2Farticle%2F695206530%2FVictims-of-Crandall-Canyon-Mine-disaster.html&usg=AFQjCNHqcZNs-qEa9SipaDkfKfYy5okkGQ&sig2=WMuhLw2C0D1jAxkiBM1uiw)
+
+```{r crandall, echo=FALSE}
+library(ggplot2)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+
+yearly.viol <- complete.active.quarters %>% 
+  filter(mine_id == 4201715 & year < 2007) %>%
   group_by(year) %>%
   summarise(count = sum(viol.quantity))
 qplot(x = year, y = count, data = yearly.viol, geom = "line",
