@@ -11,6 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message=FALSE)
 require(dplyr)
+require(ggplot2)
 knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 ```
 
@@ -23,11 +24,11 @@ if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData"
 top.deaths <- complete.active.quarters %>% filter(active & year >= 2005) %>% arrange(desc(num.death)) %>% select(mine.name, mine_id, year, quarter, num.death)
 head(top.deaths, 10)
 ```
-### Top 10 Causes of Death
+### Top 10 Causes of Death Since 2005
 ```{r top 10 causes of death}
 if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
 fatal.accidents <- accidents %>% 
-  filter(inj_degr_desc == "FATALITY") %>%
+  filter(inj_degr_desc == "FATALITY" & cal_yr >= 2005) %>%
   group_by(ai_class_desc) %>%
   summarise(count = n()
             ) %>%
@@ -41,7 +42,16 @@ head(fatal.accidents, 10)
 
 ```{r upper big branch}
 # {r upper big branch, echo=FALSE, fig.show = 'hold', out.width = '49%'}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2010 & cal_qtr == 2 & mine_id ==4608436) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 # upper.big.branch <- complete.active.quarters %>% filter(mine_id == 4608436 & (year < 2010 | (year == 2010 & quarter < 2))) %>%
 #   select(year, quarter, num.days.lost, viol.quantity)
@@ -70,7 +80,16 @@ Usable violation data only date back to 2000.
 #### [Sago Mine (4608791)](https://en.wikipedia.org/wiki/Sago_Mine_disaster)
 
 ```{r sago}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2006 & cal_qtr == 1 & mine_id ==4608791) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 4608791 & year < 2006) %>%
@@ -84,9 +103,17 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [Crandall Canyon Mine (4201715)](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0ahUKEwjOyeGnvtTSAhVN42MKHdtyD7UQFggnMAE&url=http%3A%2F%2Fwww.deseretnews.com%2Farticle%2F695206530%2FVictims-of-Crandall-Canyon-Mine-disaster.html&usg=AFQjCNHqcZNs-qEa9SipaDkfKfYy5okkGQ&sig2=WMuhLw2C0D1jAxkiBM1uiw)
 
 ```{r crandall}
-library(ggplot2)
-if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2007 & cal_qtr == 3 & mine_id ==4201715) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
 
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 4201715 & year < 2007) %>%
   group_by(year) %>%
@@ -99,7 +126,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [Darby Mine No. 1 (1518185)](http://www.chicagotribune.com/news/chi-0209220285sep22-story.html)
 
 ```{r darby}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2006 & cal_qtr == 2 & mine_id ==1518185) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 # darby.mine <- complete.active.quarters %>% filter(mine_id == 1518185 & (year < 2006 | (year == 2006 & quarter < 2))) %>%
 #   select(year, quarter, num.days.lost, viol.quantity)
@@ -119,7 +155,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [Gibson Mine	(1202215)](http://coaldiver.org/msha-id/1202215)
 
 ```{r gibson}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2007 & cal_qtr == 3 & mine_id ==1202215) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 # gibson.mine <- complete.active.quarters %>% filter(mine_id == 1202215 & (year < 2007 | (year == 2007 & quarter < 3))) %>%
 #   select(year, quarter, num.days.lost, viol.quantity)
@@ -139,7 +184,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [Revenue Mine (503528)](https://www.dol.gov/opa/media/press/msha/MSHA20141984fs.pdf)
 
 ```{r Revenue Mine}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2013 & cal_qtr == 4 & mine_id ==503528) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 503528 & year < 2013) %>%
@@ -153,7 +207,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [Dotiki Mine (1502132)](http://www.huffingtonpost.com/2010/04/29/kentucky-mine-accident-2-_n_556851.html)
 
 ```{r Dotiki Mine}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2010 & cal_qtr == 2 & mine_id ==1502132) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 1502132 & year < 2010) %>%
@@ -167,7 +230,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [P-3 Hignite (1510212)](https://arlweb.msha.gov/FATALS/2005/FTL05c1415.asp)
 
 ```{r p-3}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2005 & cal_qtr == 3 & mine_id ==1510212) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 1510212 & year < 2005) %>%
@@ -181,7 +253,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [D-14 Stillhouse (1517165)](https://arlweb.msha.gov/FATALS/2005/FTL05c1112.asp)
 
 ```{r D-14}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2005 & cal_qtr == 3 & mine_id ==1517165) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 1517165 & year < 2005) %>%
@@ -195,7 +276,16 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 #### [Equality (1519344)](https://arlweb.msha.gov/FATALS/2011/FTL11c1819.asp)
 
 ```{r equality}
-library(ggplot2)
+if(!exists("accidents")){load("./San Antonio/data/secret_ingredients.RData")}
+fatal.accidents <- accidents %>% 
+  filter(inj_degr_desc == "FATALITY" & 
+           cal_yr == 2011 & cal_qtr == 4 & mine_id ==1519344) %>%
+  group_by(ai_class_desc) %>%
+  summarise(count = n()
+            ) %>%
+  arrange(desc(count))
+head(fatal.accidents, 10)
+
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
   filter(mine_id == 1519344 & year < 2011) %>%
@@ -243,9 +333,11 @@ new.era.top.accidents <- accidents %>%
     days_lost, 
     ai_class_desc,
     ai_occ_desc, 
-    ai_narr
+    ai_narr,
+    inj_degr_desc
     ) 
 print(as.character(new.era.top.accidents$ai_narr[1]))
+print(as.character(new.era.top.accidents$inj_degr_desc[1]))
 ```
 and the second to top accident was:
 ```{r new era, accident 2}
@@ -263,6 +355,7 @@ new.era.top.accidents <- accidents %>%
     )  
 }
 print(as.character(new.era.top.accidents$ai_narr[2]))
+print(as.character(new.era.top.accidents$inj_degr_desc[2]))
 ```
 
 ## Statistical Models
@@ -290,7 +383,7 @@ num.deaths.lm <- lm(1*num.death+0*num.days.lost+0*num.days.restrict~last.quarter
 summary(num.deaths.lm)
 ```
 
-### Lognormal Distribution
+### Lognormal Distribution of Nonzero Days Lost
 
 ```{r lognormal, echo=FALSE}
 # require(fitdistrplus)
