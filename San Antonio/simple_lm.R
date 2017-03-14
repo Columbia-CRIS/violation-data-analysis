@@ -8,8 +8,39 @@ require(dplyr)
 require(survival)
 require(ggplot2)
 setwd("~/Git/violation-data-analysis")
-load("./San Antonio/output/result_select_accidents.RData")
+load("./San Antonio/output/result.RData")
 train <- complete.active.quarters %>% filter(active)
+train <- train %>% mutate(severe = num.death + num.dis > 0)
+
+hist(train$num.days.restrict)
+
+# good mine/bad mine
+# http://www.markhneedham.com/blog/2014/11/26/r-dplyr-select-random-rows-from-a-data-frame/
+set.seed(1)
+train.positive <- train %>% filter(severe)
+train.negative <- train %>% filter(!severe) %>% sample_n(nrow(train.positive))
+train.training <- rbind(train.positive, train.negative)
+train.training <- train.training %>%
+  mutate(magic.num = ifelse(last.year.viol == 0,
+                        last.year.viol / last.three.years.viol * 3,
+                        1)
+         )
+ggplot(train.training, aes(magic.num, fill = severe)) + geom_density(alpha = 0.2)
+
+#
+y <- rchisq(500, df = 3)
+## Q-Q plot for Chi^2 data against true theoretical distribution:
+# qqplot(qchisq(ppoints(500), df = 3), y)
+qqline(y, distribution = function(p) qnorm(p, mean = 3.3, sd = 1.78),
+       prob = c(0.1, 0.6), col = 2)
+
+
+# lognormal 
+training.nonzero <- complete.active.quarters %>% filter(num.days.lost >0 & active)
+qqnorm(log(training.nonzero$num.days.lost))
+qqline(log(training.nonzero$num.days.lost), distribution = function(p) qnorm(p, mean = 3.3, sd = 1.78))
+      # distribution = function(p) qnorm(p, mean = 3.3, sd = 1.78))
+
 
 train.non.zero <- train %>% filter(num.days.lost > 0)
 plot(ecdf(train.non.zero$num.days.lost))
