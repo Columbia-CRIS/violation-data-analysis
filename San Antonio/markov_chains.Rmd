@@ -1,0 +1,80 @@
+---
+title: "markov_chains"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+require(plyr)
+require(RcppRoll)
+require(markovchain)
+require(reshape)
+knitr::opts_knit$set(root.dir = "~/Documents/Violation_Project")
+setwd("~/Documents/Violation_Project")
+
+if(!exists("accidents") | 
+   !exists("full.days_lost.accidents.date") | 
+   !exists("roll_over") | 
+   !exists("mines")) {
+  load("./San Antonio/data/secret_ingredients.RData")
+  load("./San Antonio/output/result_select_accidents.RData")
+  print("raw RData loaded")
+}
+```
+
+```{r}
+
+temp <- complete.active.quarters %>% filter(active==TRUE)
+set.seed(20)
+clustering <- kmeans(temp[, 6:ncol(temp)], 3, nstart=20)
+
+freq_table <- table(clustering$cluster)
+
+```
+
+```{r}
+clustering
+freq_table
+
+clustering$centers
+```
+
+Transformed data to become in a melted format containing quarter-year, mine_id allowing for markov chain analysis
+```{r}
+
+temp$cluster <- clustering$cluster
+temp$date <- paste(as.character(temp$year), "-" , as.character(temp$quarter))
+temp2 <- temp %>% select(mine_id, cluster, date)
+melted <- melt(temp2, id=c("mine_id", "date"))
+aggregate_cluster_seq <- cast(melted, mine_id~date)
+```
+
+Markov Chain stuff
+```{r}
+markov <- function(x){
+  x <- as.integer(x)
+  cluster_seq_raw <- x[!is.na(x)]
+  if(length(cluster_seq_raw) > 1){
+    cluster_sequence <- cluster_seq_raw[2:length(cluster_seq_raw)]
+    cur_markov_chain <- markovchainFit(data=cluster_sequence)
+    return (list("mine_id" = x[1], "markov_chain" = cur_markov_chain$estimate, "num_rows" = length(cluster_seq_raw)))
+  }
+  return (list("mine_id" = x[1], "markov_chain" = NA, "num_rows" = 0))
+}
+```
+
+```{r}
+result<-alply(aggregate_cluster_seq, 1, markov)
+```
+
+```{r}
+num_rows_ind <- sapply(result, "[[", 3)
+weights <- num_rows_ind/sum(num_rows_ind)
+markov_chains_ind <- sapply(result, "[[", 2)
+aggregated_markov_chain <- weighted.mean(markov_chains_ind, weights)
+```
