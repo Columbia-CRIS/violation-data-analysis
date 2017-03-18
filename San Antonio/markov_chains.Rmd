@@ -3,10 +3,6 @@ title: "markov_chains"
 output: html_document
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 require(dplyr)
@@ -14,6 +10,8 @@ require(plyr)
 require(RcppRoll)
 require(markovchain)
 require(reshape)
+```
+```{r setting directories}
 knitr::opts_knit$set(root.dir = "~/Documents/Violation_Project")
 setwd("~/Documents/Violation_Project")
 
@@ -40,8 +38,6 @@ freq_table <- table(clustering$cluster)
 ```{r}
 clustering
 freq_table
-
-clustering$centers
 ```
 
 Transformed data to become in a melted format containing quarter-year, mine_id allowing for markov chain analysis
@@ -54,7 +50,7 @@ melted <- melt(temp2, id=c("mine_id", "date"))
 aggregate_cluster_seq <- cast(melted, mine_id~date)
 ```
 
-Markov Chain stuff
+Markov Chain function
 ```{r}
 markov <- function(x){
   x <- as.integer(x)
@@ -62,7 +58,7 @@ markov <- function(x){
   if(length(cluster_seq_raw) > 1){
     cluster_sequence <- cluster_seq_raw[2:length(cluster_seq_raw)]
     cur_markov_chain <- markovchainFit(data=cluster_sequence)
-    return (list("mine_id" = x[1], "markov_chain" = cur_markov_chain$estimate, "num_rows" = length(cluster_seq_raw)))
+    return (list("mine_id" = x[1], "markov_chain" = cur_markov_chain$estimate@transitionMatrix, "num_rows" = length(cluster_seq_raw)))
   }
   return (list("mine_id" = x[1], "markov_chain" = NA, "num_rows" = 0))
 }
@@ -75,6 +71,28 @@ result<-alply(aggregate_cluster_seq, 1, markov)
 ```{r}
 num_rows_ind <- sapply(result, "[[", 3)
 weights <- num_rows_ind/sum(num_rows_ind)
+
 markov_chains_ind <- sapply(result, "[[", 2)
-aggregated_markov_chain <- weighted.mean(markov_chains_ind, weights)
+
+weighted_transition <- mapply(function(x,y) x * y, x = weights, y = markov_chains_ind)
+
+#adding matrix of different dimentions, source: http://stackoverflow.com/questions/13571359/join-and-sum-not-compatible-matrices
+add_matrices_1 <- function(...) {
+  a <- list(...)
+  cols <- sort(unique(unlist(lapply(a, colnames))))
+  rows <- sort(unique(unlist(lapply(a, rownames))))
+  out <- array(0, dim=c(length(rows), length(cols)), dimnames=list(rows,cols))
+  for(M in a) { out[rownames(M), colnames(M)] <- out[rownames(M), colnames(M)] + M }
+  return(out)
+}
+
+final_transition<- matrix(rep(0,times= 9), ncol = 3, nrow = 3)
+colnames(final_transition) <- c(1,2,3)
+rownames(final_transition) <- c(1,2,3)
+
+for(i in 1:length(weighted_transition)){
+  final_transition <- add_matrices_1(final_transition,weighted_transition[[i]])
+}
+final_transition
+
 ```
