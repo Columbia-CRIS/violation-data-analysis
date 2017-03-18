@@ -1,0 +1,110 @@
+---
+title: "A Data-Driven Early Warning System for Mining Accident"
+shorttitle: "Mining Accident Data Analysis"
+author: |
+  | Yu Luo, Ashutosh Nanda, Shiva Rajgopal, Vinay Ramesh,
+  | Venkat Venkatasubramanian, Zhizun Zhang, and Catherine Zhao
+shortauthor: "Luo et al."
+institute: "Columbia University"
+date: "3/27/2017"
+output: 
+  beamer_presentation:
+    # incremental: true
+    template: rmd_template.tex
+    fig_height: 4.75
+    toc: true
+    slide_level: 2
+    includes:
+      in_header: rmd_header.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+require(dplyr)
+require(ggplot2)
+knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
+```
+
+# Introduction: Mine Safety and MSHA Data
+
+<!-- https://www.msha.gov/about/mission -->
+## Mine Safety and Health Administration (MSHA)
+
+- Formed in	1977
+- Agency of the United States Department of Labor
+- Mission
+    - Prevent death, illness, and injury from mining
+    - Promote safe and healthful workplaces for U.S. miners
+    - Develop and enforce safety and health rules
+    - Provide technical, educational, and other types of assistance
+
+## Fatality Trend Since 1983
+
+```{r fatality trend}
+if(!exists("accidents")) {load("./San Antonio/data/secret_ingredients.RData")}
+yearly.death <- accidents %>% 
+  mutate(death = ifelse(inj_degr_desc == "FATALITY", 1, 0)) %>%
+  group_by(cal_yr) %>%
+  summarise(count = sum(death))
+qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
+      main = "Number of Total Fatalities Due to Accidents",
+      xlab = "Year", ylab = "Count")
+```
+
+## Upper Big Branch Disaster
+
+# Methods: Data and Model Assumptions
+
+## Primary Datasets
+
+- **Mine accidents**: "msha_accident.csv" (681,386 obs., retrieved 1/26/2017, from <https://enforcedata.dol.gov/views/data_summary.php>)
+- **MSHA assessed violations**: "AssessedViolations.csv" (2,169,804 obs., retrieved 12/10/2016, from <https://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp>)
+
+## Master Data Table
+
+```{r master data}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+names(complete.active.quarters)
+```
+
+## Model
+
+# Results and Discussion
+
+## Number of Days Lost since 2000
+
+```{r num.days.lost trend}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.lost <- complete.active.quarters %>% 
+  filter(year >= 2000 & active) %>%
+  group_by(year) %>%
+  summarise(count = sum(num.days.lost),
+            avg = mean(num.days.lost))
+qplot(x = year, y = count, data = yearly.lost, geom = c("point", "line"),
+      main = "Number of Total Days Lost Due to Accidents",
+      xlab = "Year", ylab = "Count")
+# qplot(x = year, y = avg, data = yearly.lost, geom = c("point", "line"),
+#       main = "Number of Average Days Lost Due to Accidents",
+#       xlab = "Year", ylab = "Count")
+```
+
+## Number of Violations since 2000
+
+```{r viol.quantity trend}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.viol <- complete.active.quarters %>% 
+  filter(year >= 2000 & active) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity),
+            avg = mean(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
+      main = "Number of Total Violations",
+      xlab = "Year", ylab = "Count")
+```
+
+# Conclusion
+
+<!-- USEFUL LINKS:
+http://www.sr.bham.ac.uk/~ajrs/R/r-show_data.html
+http://rmarkdown.rstudio.com/articles_beamer.html
+https://groups.google.com/forum/#!searchin/pandoc-discuss/beamer/pandoc-discuss/XMYG6ewG7a0/Q1LKHaOFBDUJ -->
