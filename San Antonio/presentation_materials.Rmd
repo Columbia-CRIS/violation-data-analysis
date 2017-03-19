@@ -421,6 +421,37 @@ print(as.character(new.era.top.accidents$inj_degr_desc[2]))
 
 ## Statistical Models
 
+### Fixed Effects Model with Combined Data (training = testing)
+
+```{r fe.cmb}
+if (!exists("fe.cmb.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(fe.cmb.result %>% filter(year >= 2005) %>% arrange(desc(num.death)), 20) %>% select(
+  mine.name, num.death, severe, prob, pred
+)
+print(fe.cmb.performance)
+```
+
+### Fixed Effects Model with Divided Data (half training, half testing)
+
+```{r fe.div}
+if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death)), 20) %>% select(
+  mine.name, num.death, severe, prob, pred
+)
+print(fe.div.performance)
+```
+
+### Logistic Regression Model without Fixed Effects
+
+```{r glm}
+if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death)), 20) %>% select(
+  mine.name, num.death, severe, prob, pred
+)
+print(glm.performance)
+```
+
+
 ### Simple Linear Model
 
 The following linear model tests a few predictors and their ability to predict number of days lost or restircted:

@@ -136,6 +136,9 @@ $(document).ready(function () {
 </ul></li>
 <li><a href="#number-of-days-lost-not-implying-severity-e.g.-new-era-mine">Number of Days Lost not Implying Severity (e.g., New Era Mine)</a></li>
 <li><a href="#statistical-models">Statistical Models</a><ul>
+<li><a href="#fixed-effects-model-with-combined-data-training-testing">Fixed Effects Model with Combined Data (training = testing)</a></li>
+<li><a href="#fixed-effects-model-with-divided-data-half-training-half-testing">Fixed Effects Model with Divided Data (half training, half testing)</a></li>
+<li><a href="#logistic-regression-model-without-fixed-effects">Logistic Regression Model without Fixed Effects</a></li>
 <li><a href="#simple-linear-model">Simple Linear Model</a></li>
 <li><a href="#lognormal-distribution-of-nonzero-days-lost">Lognormal Distribution of Nonzero Days Lost</a></li>
 </ul></li>
@@ -310,6 +313,198 @@ Usable violation data only date back to 2000.
 </div>
 <div id="statistical-models" class="section level2">
 <h2>Statistical Models</h2>
+<div id="fixed-effects-model-with-combined-data-training-testing" class="section level3">
+<h3>Fixed Effects Model with Combined Data (training = testing)</h3>
+<pre><code>##                                  mine.name num.death severe      prob pred
+## 1              Upper Big Branch Mine-South        29   TRUE 0.9780759 TRUE
+## 2                                Sago Mine        12   TRUE 0.9066651 TRUE
+## 3                     Crandall Canyon Mine         9   TRUE 0.7760855 TRUE
+## 4                          Darby Mine No 1         5   TRUE 0.7165431 TRUE
+## 5                              Gibson Mine         3   TRUE 0.6799774 TRUE
+## 6                             Revenue Mine         2   TRUE 0.6042005 TRUE
+## 7                              Dotiki Mine         2   TRUE 0.5793645 TRUE
+## 8                              P-3 Hignite         2   TRUE 0.5521002 TRUE
+## 9                          D-14 Stillhouse         2   TRUE 0.5865293 TRUE
+## 10                                Equality         2   TRUE 0.6077961 TRUE
+## 11                                  Job #3         2   TRUE 0.5455831 TRUE
+## 12 Mississippi Lime Company-Ste. Genevieve         2   TRUE 0.5236180 TRUE
+## 13                             Meikle Mine         2   TRUE 0.6477861 TRUE
+## 14                    Aracoma Alma Mine #1         2   TRUE 0.5875833 TRUE
+## 15                           Affinity Mine         2   TRUE 0.6455322 TRUE
+## 16                           Cucumber Mine         2   TRUE 0.6566603 TRUE
+## 17                  Black Stallion UG Mine         2   TRUE 0.6048358 TRUE
+## 18                     Nanuuq Gold Project         2   TRUE 0.6059585 TRUE
+## 19                       Brierfield Quarry         1   TRUE 0.5250858 TRUE
+## 20                            Choctaw Mine         1   TRUE 0.5496393 TRUE</code></pre>
+<pre><code>## $positive
+## [1] &quot;TRUE&quot;
+## 
+## $table
+##           Reference
+## Prediction  FALSE   TRUE
+##      FALSE 287969    965
+##      TRUE  189108   1643
+## 
+## $overall
+##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##    0.603754547    0.006335115    0.602368734    0.605139107    0.994563099 
+## AccuracyPValue  McnemarPValue 
+##    1.000000000    0.000000000 
+## 
+## $byClass
+##          Sensitivity          Specificity       Pos Pred Value 
+##          0.629984663          0.603611157          0.008613323 
+##       Neg Pred Value            Precision               Recall 
+##          0.996660137          0.008613323          0.629984663 
+##                   F1           Prevalence       Detection Rate 
+##          0.016994296          0.005436901          0.003425164 
+## Detection Prevalence    Balanced Accuracy 
+##          0.397658880          0.616797910 
+## 
+## $mode
+## [1] &quot;sens_spec&quot;
+## 
+## $dots
+## list()
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;confusionMatrix&quot;</code></pre>
+</div>
+<div id="fixed-effects-model-with-divided-data-half-training-half-testing" class="section level3">
+<h3>Fixed Effects Model with Divided Data (half training, half testing)</h3>
+<pre><code>##                              mine.name num.death severe      prob  pred
+## 1                            Sago Mine        12   TRUE 0.8990590  TRUE
+## 2                 Crandall Canyon Mine         9   TRUE 0.7551069  TRUE
+## 3                      Darby Mine No 1         5   TRUE 0.8249471  TRUE
+## 4                          Dotiki Mine         2   TRUE 0.5917407  TRUE
+## 5                             Equality         2   TRUE 0.6317520  TRUE
+## 6                          Meikle Mine         2   TRUE 0.6622427  TRUE
+## 7                        Cucumber Mine         2   TRUE 0.6948031  TRUE
+## 8                  Nanuuq Gold Project         2   TRUE 0.5972333  TRUE
+## 9  BRC Greenfuels LLC - Kellerman Prep         1   TRUE 0.5478109  TRUE
+## 10                          No. 3 Mine         1   TRUE 0.4939335 FALSE
+## 11                           No 4 Mine         1   TRUE 0.5670680  TRUE
+## 12                           No 7 Mine         1   TRUE 0.5340842  TRUE
+## 13                    Shoal Creek Mine         1   TRUE 0.6146054  TRUE
+## 14                    Shoal Creek Mine         1   TRUE 0.3970898 FALSE
+## 15                      Jap Creek Mine         1   TRUE 0.5411355  TRUE
+## 16                       Rare Red Rock         1   TRUE 0.5445767  TRUE
+## 17                          Plant No 1         1   TRUE 0.5484276  TRUE
+## 18                        Shannon Mine         1   TRUE 0.5389210  TRUE
+## 19                          Town Creek         1   TRUE 0.5391139  TRUE
+## 20                         Kansas Mine         1   TRUE 0.5934234  TRUE</code></pre>
+<pre><code>## $positive
+## [1] &quot;TRUE&quot;
+## 
+## $table
+##           Reference
+## Prediction  FALSE   TRUE
+##      FALSE 141332    483
+##      TRUE   97167    852
+## 
+## $overall
+##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##    0.592843383    0.006236175    0.590873915    0.594810608    0.994433650 
+## AccuracyPValue  McnemarPValue 
+##    1.000000000    0.000000000 
+## 
+## $byClass
+##          Sensitivity          Specificity       Pos Pred Value 
+##          0.638202247          0.592589487          0.008692192 
+##       Neg Pred Value            Precision               Recall 
+##          0.996594154          0.008692192          0.638202247 
+##                   F1           Prevalence       Detection Rate 
+##          0.017150794          0.005566350          0.003552457 
+## Detection Prevalence    Balanced Accuracy 
+##          0.408695181          0.615395867 
+## 
+## $mode
+## [1] &quot;sens_spec&quot;
+## 
+## $dots
+## list()
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;confusionMatrix&quot;</code></pre>
+</div>
+<div id="logistic-regression-model-without-fixed-effects" class="section level3">
+<h3>Logistic Regression Model without Fixed Effects</h3>
+<pre><code>##                                  mine.name num.death severe        prob
+## 1              Upper Big Branch Mine-South        29   TRUE 0.049212730
+## 2                                Sago Mine        12   TRUE 0.018696667
+## 3                     Crandall Canyon Mine         9   TRUE 0.005920853
+## 4                          Darby Mine No 1         5   TRUE 0.005528078
+## 5                              Gibson Mine         3   TRUE 0.037716725
+## 6                             Revenue Mine         2   TRUE 0.005953269
+## 7                              Dotiki Mine         2   TRUE 0.099765244
+## 8                              P-3 Hignite         2   TRUE 0.005174922
+## 9                          D-14 Stillhouse         2   TRUE 0.011758621
+## 10                                Equality         2   TRUE 0.004656164
+## 11                                  Job #3         2   TRUE 0.004364654
+## 12 Mississippi Lime Company-Ste. Genevieve         2   TRUE 0.007095124
+## 13                             Meikle Mine         2   TRUE 0.008603836
+## 14                    Aracoma Alma Mine #1         2   TRUE 0.010412854
+## 15                           Affinity Mine         2   TRUE 0.016206873
+## 16                           Cucumber Mine         2   TRUE 0.009389237
+## 17                  Black Stallion UG Mine         2   TRUE 0.078620849
+## 18                     Nanuuq Gold Project         2   TRUE 0.004336680
+## 19                       Brierfield Quarry         1   TRUE 0.004422030
+## 20                            Choctaw Mine         1   TRUE 0.004892378
+##     pred
+## 1  FALSE
+## 2  FALSE
+## 3  FALSE
+## 4  FALSE
+## 5  FALSE
+## 6  FALSE
+## 7  FALSE
+## 8  FALSE
+## 9  FALSE
+## 10 FALSE
+## 11 FALSE
+## 12 FALSE
+## 13 FALSE
+## 14 FALSE
+## 15 FALSE
+## 16 FALSE
+## 17 FALSE
+## 18 FALSE
+## 19 FALSE
+## 20 FALSE</code></pre>
+<pre><code>## $positive
+## [1] &quot;TRUE&quot;
+## 
+## $table
+##           Reference
+## Prediction  FALSE   TRUE
+##      FALSE 477011   2600
+##      TRUE      66      8
+## 
+## $overall
+##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##    0.994442186    0.005667375    0.994227745    0.994650621    0.994563099 
+## AccuracyPValue  McnemarPValue 
+##    0.874441163    0.000000000 
+## 
+## $byClass
+##          Sensitivity          Specificity       Pos Pred Value 
+##         3.067485e-03         9.998617e-01         1.081081e-01 
+##       Neg Pred Value            Precision               Recall 
+##         9.945789e-01         1.081081e-01         3.067485e-03 
+##                   F1           Prevalence       Detection Rate 
+##         5.965697e-03         5.436901e-03         1.667761e-05 
+## Detection Prevalence    Balanced Accuracy 
+##         1.542679e-04         5.014646e-01 
+## 
+## $mode
+## [1] &quot;sens_spec&quot;
+## 
+## $dots
+## list()
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;confusionMatrix&quot;</code></pre>
+</div>
 <div id="simple-linear-model" class="section level3">
 <h3>Simple Linear Model</h3>
 <p>The following linear model tests a few predictors and their ability to predict number of days lost or restircted:</p>
