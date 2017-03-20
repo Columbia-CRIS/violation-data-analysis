@@ -5,11 +5,15 @@ author: |
   | Yu Luo, Ashutosh Nanda, Shiva Rajgopal, Vinay Ramesh,
   | Venkat Venkatasubramanian, Zhizun Zhang, and Catherine Zhao
 shortauthor: "Luo et al."
-institute: "Columbia University"
+institute: |
+  | Chemical Engineering, Computer Science, and Business School
+  | Columbia University
+shortinstitute: "Columbia University"
 date: "3/27/2017"
 output: 
   beamer_presentation:
-    # incremental: true
+    keep_tex: false
+    incremental: false
     template: rmd_template.tex
     fig_height: 4.75
     toc: true
@@ -19,13 +23,52 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, fig.align = "center")
+options(scipen = 1, digits = 2)
 require(dplyr)
 require(ggplot2)
 knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 ```
 
-# Introduction: Mine Safety and MSHA Data
+## Complex, Resilient, Intelligent Systems (CRIS Lab)
+
+![CRIS Lab](CrisResearch720.png)
+
+<!-- https://aiche.confex.com/aiche/s17/webprogram/Paper480429.html -->
+# Introduction: A Data Approach to Mine Safety
+
+## Systemic Risk
+
+- Systemic disasters
+    - SARS (2003)
+    - Northeast Blackout (2003)
+    - Subprime Crisis (2008)
+    - Deepwater Horizon Oil Spill (2010)
+- Emerging systemic risks
+    - Climate change
+    - Income/wealth inequality
+    - Cyber-physical security
+    - Technological singularity
+- Fast-paced and connected
+- Design complex systems
+- Analyze systemic risk
+
+<!-- 
+https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster
+https://arlweb.msha.gov/MEDIA/PRESS/2011/NR111206.asp 
+-->
+## Upper Big Branch Mine Disaster (2010)
+
+- April 5, 2010, Raleigh County, West Virginia, owned by Massey Energy
+- 29 deaths, the worst mining in the United States since 1970
+- MSHA cites corporate culture as root cause of Upper Big Branch Mine disaster 
+
+## Sago Mine Disaster (2006)
+
+- January 2, 2006, Sago, West Virginia, owned by Anker West Virginia Mining
+- 13 miners were trapped for nearly two days; only one survived
+- Fatality number was exceeded by the Upper Big Branch Mine disaster
+- MSHA reports prior history of safety violations and fatalities
 
 <!-- https://www.msha.gov/about/mission -->
 ## Mine Safety and Health Administration (MSHA)
@@ -51,14 +94,31 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
       xlab = "Year", ylab = "Count")
 ```
 
-## Upper Big Branch Disaster
+## Can We Further Improve Mine Safety?
 
-# Methods: Data and Model Assumptions
+- Process MSHA safety data
+- Understand the underlying causal relationships
+- Develop early warning systems
+
+# Methods: Data Sources and Model Preliminaries
 
 ## Primary Datasets
 
-- **Mine accidents**: "msha_accident.csv" (681,386 obs., retrieved 1/26/2017, from <https://enforcedata.dol.gov/views/data_summary.php>)
-- **MSHA assessed violations**: "AssessedViolations.csv" (2,169,804 obs., retrieved 12/10/2016, from <https://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp>)
+- Mine accidents table: "msha_accident.csv" 
+    - 681,386 rows
+    - Retrieved 1/26/2017, from <https://enforcedata.dol.gov/views/data_summary.php>
+- MSHA assessed violations table: "AssessedViolations.csv" 
+    - 2,169,804 rows
+    - Retrieved 12/10/2016, from <https://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp>
+
+## Master Data Table    
+
+- 664,128 rows
+- 10,377 unique mines
+- From 2000 to 2015 in quarters
+- Each row represents data for a unique combination of mine, year, and quarter
+    - e.g., Upper Big Branch Mine in the second quarter of 2010
+- Each row contains both current and past information
 
 ## Master Data Table
 
@@ -67,42 +127,237 @@ if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData"
 names(complete.active.quarters)
 ```
 
-## Model
+## Top 10 Fatal Accidents Since 2005
+
+```{r top 10 fatality}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+top.deaths <- complete.active.quarters %>% filter(active & year >= 2005) %>% arrange(desc(num.death), mine.name) %>% select(mine.name, mine_id, year, quarter, num.death)
+head(top.deaths, 10)
+```
+
+## Violation Trend: Upper Big Branch
+
+```{r upper big branch}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.viol <- complete.active.quarters %>% 
+  filter(mine_id == 4608436 & year < 2010) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
+      main = "Number of Yearly Violations",
+      xlab = "Year", ylab = "Count")
+```
+
+## Violation Trend: Sago Mine
+
+```{r sago}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.viol <- complete.active.quarters %>% 
+  filter(mine_id == 4608791 & year < 2006) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
+      main = "Number of Yearly Violations",
+      xlab = "Year", ylab = "Count")
+```
+
+## Violation Trend: Crandall Canyon
+
+```{r crandall}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.viol <- complete.active.quarters %>% 
+  filter(mine_id == 4201715 & year < 2007) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
+      main = "Number of Yearly Violations",
+      xlab = "Year", ylab = "Count")
+```
+
+## Violation Trend: Darby Mine No. 1
+
+```{r darby}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.viol <- complete.active.quarters %>% 
+  filter(mine_id == 1518185 & year < 2006) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
+      main = "Number of Yearly Violations",
+      xlab = "Year", ylab = "Count")
+```
+
+## Violation Trend: Gibson
+
+```{r gibson}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+yearly.viol <- complete.active.quarters %>% 
+  filter(mine_id == 1202215 & year < 2007) %>%
+  group_by(year) %>%
+  summarise(count = sum(viol.quantity))
+qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
+      main = "Number of Yearly Violations",
+      xlab = "Year", ylab = "Count")
+```
+
+## Predictive Model
+
+- Rising violation trends before disasters
+- A disaster classifier based on historical data?
+- Define a **severe** accident as one with death or permenant disability
+- Unbalanced data
+
+```{r severe all}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+severe.summary <- complete.active.quarters %>%
+  filter() %>%
+  mutate(severe = ifelse(
+    num.death + num.dis > 0, TRUE, FALSE
+  )) %>%
+  group_by(severe) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n / sum(n) * 100)
+print(severe.summary)
+```
 
 # Results and Discussion
 
-## Number of Days Lost since 2000
+## Processing Data
 
-```{r num.days.lost trend}
+- Remove **inactive** quarters
+
+```{r severe active}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
-yearly.lost <- complete.active.quarters %>% 
-  filter(year >= 2000 & active) %>%
-  group_by(year) %>%
-  summarise(count = sum(num.days.lost),
-            avg = mean(num.days.lost))
-qplot(x = year, y = count, data = yearly.lost, geom = c("point", "line"),
-      main = "Number of Total Days Lost Due to Accidents",
-      xlab = "Year", ylab = "Count")
-# qplot(x = year, y = avg, data = yearly.lost, geom = c("point", "line"),
-#       main = "Number of Average Days Lost Due to Accidents",
-#       xlab = "Year", ylab = "Count")
+severe.summary <- complete.active.quarters %>%
+  filter(active) %>%
+  mutate(severe = ifelse(
+    num.death + num.dis > 0, TRUE, FALSE
+  )) %>%
+  group_by(severe) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n / sum(n) * 100)
+print(severe.summary)
 ```
 
-## Number of Violations since 2000
+<!-- http://www.stata.com/manuals13/rclogit.pdf -->
+## Processing Data
 
-```{r viol.quantity trend}
+- Consider fixed-mine effects
+    - Biostatisticians and epidemiologists call it "conditional logistic regression" (R, survival::clogit)
+    - Suitable for panel data (e.g., our master data table)
+    - Model includes mine-specific but time-invariant variables (e.g., same slope but different intercepts for different mines)
+
+## Logistic Regression Without Fixed Effects
+
+- Train and test on all data
+
+```{r glm}
+if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+print(glm.performance$table)
+print(glm.performance$byClass)
+```
+
+## Logistic Regression Without Fixed Effects
+
+- Sort result based on number of deaths
+
+```{r glm rank death}
+if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+```
+
+<!--
+## Logistic Regression Without Fixed Effects
+
+- Sort result based on model probability
+
+```{r glm rank prob}
+if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+```
+-->
+
+## Logistic Regression with Fixed Effects
+
+- Randomly select half of the data to train and the other half to test
+
+```{r fe.div}
+if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+print(fe.div.performance$table)
+print(fe.div.performance$byClass)
+```
+
+## Logistic Regression with Fixed Effects
+
+- Sort result based on number of deaths
+
+```{r fe.div rank death}
+if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+```
+
+## Logistic Regression with Fixed Effects
+
+- Sort result based on model probability
+
+```{r fe.div rank prob}
+if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+```
+
+## New Era Mine
+
+- The American Coal Company New Era Mine occupies 6 slots on the top 10 list of most days lost due to accidents
+
+```{r top 10 days lost}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+top.days.lost <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost), mine.name) %>% select(mine.name, year, quarter, num.days.lost)
+head(top.days.lost, 10)
+```
+
+## New Era Mine
+
+<!--- Violation trend prior to the first quarter in 2006 where model probability is 0.99-->
+
+```{r new era viol}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
-  filter(year >= 2000 & active) %>%
+  filter(mine_id == 1102752 & year < 2006) %>%
   group_by(year) %>%
-  summarise(count = sum(viol.quantity),
-            avg = mean(viol.quantity))
+  summarise(count = sum(viol.quantity))
 qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
-      main = "Number of Total Violations",
+      main = "Number of Yearly Violations",
       xlab = "Year", ylab = "Count")
+```
+
+## Simple Linear Model on Number of Days Lost
+
+- Adjusted $R^2=0.36$
+
+```{r simple lm of days lost}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+num.days.lm <- lm(num.days.lost~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active))
+summary(num.days.lm)$coefficients
 ```
 
 # Conclusion
+
+## Conclusion
+
+<!-- - Causal relationship between accidents and historical data -->
+- TBD
 
 <!-- USEFUL LINKS:
 http://www.sr.bham.ac.uk/~ajrs/R/r-show_data.html

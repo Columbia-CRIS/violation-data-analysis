@@ -10,6 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+options(scipen = 1, digits = 2)
 require(dplyr)
 require(ggplot2)
 knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
@@ -82,7 +83,7 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 
 ```{r top 10 fatality}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
-top.deaths <- complete.active.quarters %>% filter(active & year >= 2005) %>% arrange(desc(num.death)) %>% select(mine.name, mine_id, year, quarter, num.death)
+top.deaths <- complete.active.quarters %>% filter(active & year >= 2005) %>% arrange(desc(num.death), mine.name) %>% select(mine.name, mine_id, year, quarter, num.death)
 head(top.deaths, 10)
 ```
 ### Top 10 Causes of Death Since 2005
@@ -364,7 +365,7 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 Among the top 10 mine-quarters based on number of days lost,
 ```{r top 10 days lost}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
-top.days.lost <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost)) %>% select(mine.name, year, quarter, num.days.lost)
+top.days.lost <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost), mine.name) %>% select(mine.name, mine_id, year, quarter, num.days.lost)
 head(top.days.lost, 10)
 ```
 the "American Coal Company New Era Mine" take 5 spots.
@@ -419,15 +420,35 @@ print(as.character(new.era.top.accidents$ai_narr[2]))
 print(as.character(new.era.top.accidents$inj_degr_desc[2]))
 ```
 
-## Statistical Models
+## Statistical Analyses
+
+### Severe Accidents
+
+```{r severe}
+# options(digits = 1)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+severe.summary <- complete.active.quarters %>%
+  filter(active) %>%
+  mutate(severe = ifelse(
+    num.death + num.dis > 0, TRUE, FALSE
+  )) %>%
+  group_by(severe) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n / sum(n) * 100)
+print(severe.summary)
+```
+
 
 ### Fixed Effects Model with Combined Data (training = testing)
 
 ```{r fe.cmb}
 if (!exists("fe.cmb.result")){load("./San Antonio/output/results_fixed_effects.RData")}
-head(fe.cmb.result %>% filter(year >= 2005) %>% arrange(desc(num.death)), 20) %>% select(
+head(fe.cmb.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 20) %>% select(
   mine.name, num.death, severe, prob, pred
-)
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+head(fe.cmb.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 20) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
 print(fe.cmb.performance)
 ```
 
@@ -435,9 +456,12 @@ print(fe.cmb.performance)
 
 ```{r fe.div}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
-head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death)), 20) %>% select(
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 20) %>% select(
   mine.name, num.death, severe, prob, pred
-)
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 20) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
 print(fe.div.performance)
 ```
 
@@ -445,9 +469,12 @@ print(fe.div.performance)
 
 ```{r glm}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
-head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death)), 20) %>% select(
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 20) %>% select(
   mine.name, num.death, severe, prob, pred
-)
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 20) %>% select(
+  mine.name, num.death, severe, prob, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
 print(glm.performance)
 ```
 
@@ -467,7 +494,7 @@ summary(num.days.lm)
 The following linear model tests a few predictors and their ability to predict number of deaths:
 ```{r simple lm of death}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
-num.deaths.lm <- lm(1*num.death+0*num.days.lost+0*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+num.deaths.lm <- lm(1*num.death+1*num.dis +0*num.days.lost+0*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
            +last.quarter.restrict+last.year.restrict+last.three.years.restrict
            +last.quarter.viol+last.year.viol+last.three.years.viol
            +last.quarter.death+last.year.death+last.three.years.death, 
