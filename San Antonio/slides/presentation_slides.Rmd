@@ -113,9 +113,12 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
 - Enforecement Data Catalog
     - MSHA Enforcement Data
     - OSHA Enforcement Data
-    - Wage and Hour Compliance Action Data
-    - OFCCP Compliance Evaluation and Complaint Investigation Data
-    - EBSA Enforcement Data
+    <!-- - Wage and Hour Compliance Action Data -->
+    <!-- - OFCCP Compliance Evaluation and Complaint Investigation Data -->
+    <!-- - EBSA Enforcement Data -->
+    <!-- - Department of Justice -->
+    - EPA
+    - FDA
 
 ## MSHA Data: Sources
 
@@ -138,18 +141,18 @@ names(accidents[c(1, 14, 5:13, 19:20, 37:59)])
 
 ## MSHA Data: Challenges
 
-- Missing data
-- Inactive mines
+- Missing data, typos
+- Inactive mines are not labeled
 - Most data are not numeric
 - Relatively few severe accidents ($\sim0.5\%$)
 
-## Model Preliminaries
+<!-- ## Model Preliminaries -->
 
-- Create a master data table with selected attributes
-- Plot violation trends for Upper Big Branch Mine and Sago Mine
-- Design a predictive model
+<!-- - Create a master data table with selected attributes -->
+<!-- - Plot violation trends for Upper Big Branch Mine and Sago Mine -->
+<!-- - Conduct statistical analyses -->
 
-## Master Data Table
+## Consolidated Data
 
 - Combine and summarize accidents/violations based on mines
 - 664,128 rows, 10,377 unique mines
@@ -158,7 +161,9 @@ names(accidents[c(1, 14, 5:13, 19:20, 37:59)])
     - e.g., Upper Big Branch Mine in the second quarter of 2010
 - Each row contains both current and past information
 
-## Master Data Table
+## Consolidated Data
+
+- Number of days lost (`num.days.lost`), numer of days restricted (`num.days.restrict`), number of deaths (`num.death`), number of permenant disabilities (`num.dis`), and number of violations (`viol.quantity`) 
 
 ```{r master data}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
@@ -264,8 +269,8 @@ print(severe.summary)
 ## Fixed-Mine Effects
 
 - Biostatisticians and epidemiologists call it "conditional logistic regression" (`survival::clogit`)
-- Suitable for panel data (e.g., our master data table)
-- Model includes mine-specific but time-invariant variables (e.g., same slope but different intercepts for different mines)
+- Suitable for **panel data** (e.g., our consolidated data)
+- Model includes mine-specific but time-invariant variables
 - Logistic regression (for every mine)
 
 \[\Pr(Y=1|\mathbf{X})=F(\mathbf{X}) = \frac{1}{1+e^{-(\alpha+\boldsymbol\beta\mathbf{X})}}\]
@@ -278,7 +283,9 @@ print(severe.summary)
 
 ## Logistic Regression Without Fixed Effects
 
-- Train and test on all data
+<!-- 解释 confusion matrix和 specificity -->
+
+- In-sample model
 
 ```{r glm}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -288,7 +295,7 @@ print(glm.performance$byClass)
 
 ## Logistic Regression Without Fixed Effects
 
-- True positives
+- Fail to predict top 10 true positives
 
 ```{r glm rank death}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -299,7 +306,8 @@ head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name)
 
 ## Logistic Regression Without Fixed Effects
 
-- Top predicted positives (possibly false positives)
+- False positive predictions
+<!-- - Top predicted positives (possibly false positives) -->
 
 ```{r glm rank prob}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -311,7 +319,7 @@ head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
 
 ## Logistic Regression with Fixed Effects
 
-- Randomly select half of the data to train and the other half to test
+- Out-of-sample model (randomly select half of the data to train and the other half to test)
 
 ```{r fe.div}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -321,7 +329,7 @@ print(fe.div.performance$byClass)
 
 ## Logistic Regression with Fixed Effects
 
-- Top true positives (deadliest accidents)
+- Successfully predict all top 10 true positives
 
 ```{r fe.div rank death}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -332,7 +340,7 @@ head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.na
 
 ## Logistic Regression with Fixed Effects
 
-- Top predicted positives (possibly false positives)
+- False positive predictions
 
 ```{r fe.div rank prob}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -356,6 +364,7 @@ head(top.days.lost, 10)
 ## New Era Mine
 
 <!--- Violation trend prior to the first quarter in 2006 where model probability is 0.99-->
+<!-- 即便没有灾难，也有趋势，警示作用，后来可能改善了 -->
 
 ```{r new era viol}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
@@ -380,7 +389,7 @@ print(fe.div2.performance$byClass)
 
 ## New Labels Including Days Lost
 
-- Top true positives (deadliest accidents)
+- Successfully predict 9 out of top 10 true positives
 
 ```{r fe.div2 rank death}
 if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -391,7 +400,7 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.n
 
 ## New Labels Including Days Lost
 
-- Top predicted positives (possibly false positives)
+- 
 
 ```{r fe.div2 rank prob}
 if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -399,6 +408,10 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% se
   mine.name, year, quarter, severe, pred
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
+
+## Unsupervised Clustering
+
+## Markov Chain
 
 # Conclusion
 
@@ -408,6 +421,12 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% se
 - Summary
     - Two deadliest mine accidents in the last decade: Upper Big Branch & Sago
     - MSHA 
+- Application
+    - "Credit score" for mine safety
+    - Regulators, mines, stakeholders
+- Future
+    - Expand data: OSHA, EPA, etc.
+    - Models and techniques: artificial neural networks (restricted boltzmann machine), text mining, etc.
 
 ## Appendix: Simple Linear Model
 
