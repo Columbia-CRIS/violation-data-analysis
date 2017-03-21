@@ -98,11 +98,26 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
 
 - Process MSHA safety data
 - Understand the underlying causal relationships
-- Develop early warning systems
+- Develop early warning systems based on past behaviors
+- Credit rating/score analogy
+    - Predict default probability within 18 months
+    - Accidents: defaults a month or a year prior to application
+    - Violations: missed payments, late payments, etc.
 
 # Methods: Data Sources and Model Preliminaries
 
-## Primary Datasets
+## Department of Labor Enforcement Data
+
+- Link: <https://enforcedata.dol.gov/views/data_catalogs.php>
+- Updated daily or weekly
+- Enforecement Data Catalog
+    - MSHA Enforcement Data
+    - OSHA Enforcement Data
+    - Wage and Hour Compliance Action Data
+    - OFCCP Compliance Evaluation and Complaint Investigation Data
+    - EBSA Enforcement Data
+
+## MSHA Data: Sources
 
 - Mine accidents table: "msha_accident.csv" 
     - 681,386 rows
@@ -111,10 +126,33 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
     - 2,169,804 rows
     - Retrieved 12/10/2016, from <https://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp>
 
-## Master Data Table    
+## MSHA Data: Advantages
 
-- 664,128 rows
-- 10,377 unique mines
+- Each mine has a unique mine ID, e.g., Upper Big Branch (4608436)
+- Rich details, e.g., selected attributes from the accidents table:
+
+```{r msha accidents}
+if(!exists("accidents")) {load("./San Antonio/data/secret_ingredients.RData")}
+names(accidents[c(1, 14, 5:13, 19:20, 37:59)])
+```
+
+## MSHA Data: Challenges
+
+- Missing data
+- Inactive mines
+- Most data are not numeric
+- Relatively few severe accidents ($\sim0.5\%$)
+
+## Model Preliminaries
+
+- Create a master data table with selected attributes
+- Plot violation trends for Upper Big Branch Mine and Sago Mine
+- Design a predictive model
+
+## Master Data Table
+
+- Combine and summarize accidents/violations based on mines
+- 664,128 rows, 10,377 unique mines
 - From 2000 to 2015 in quarters
 - Each row represents data for a unique combination of mine, year, and quarter
     - e.g., Upper Big Branch Mine in the second quarter of 2010
@@ -161,6 +199,7 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
       xlab = "Year", ylab = "Count")
 ```
 
+<!--
 ## Violation Trend: Crandall Canyon
 
 ```{r crandall}
@@ -199,6 +238,7 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
       main = "Number of Yearly Violations",
       xlab = "Year", ylab = "Count")
 ```
+-->
 
 ## Predictive Model
 
@@ -206,25 +246,6 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 - A disaster classifier based on historical data?
 - Define a **severe** accident as one with death or permenant disability
 - Unbalanced data
-
-```{r severe all}
-if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
-severe.summary <- complete.active.quarters %>%
-  filter() %>%
-  mutate(severe = ifelse(
-    num.death + num.dis > 0, TRUE, FALSE
-  )) %>%
-  group_by(severe) %>%
-  summarise(n = n()) %>%
-  mutate(perc = n / sum(n) * 100)
-print(severe.summary)
-```
-
-# Results and Discussion
-
-## Processing Data
-
-- Remove **inactive** quarters
 
 ```{r severe active}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
@@ -240,12 +261,20 @@ print(severe.summary)
 ```
 
 <!-- http://www.stata.com/manuals13/rclogit.pdf -->
-## Processing Data
+## Fixed-Mine Effects
 
-- Consider fixed-mine effects
-    - Biostatisticians and epidemiologists call it "conditional logistic regression" (R, survival::clogit)
-    - Suitable for panel data (e.g., our master data table)
-    - Model includes mine-specific but time-invariant variables (e.g., same slope but different intercepts for different mines)
+- Biostatisticians and epidemiologists call it "conditional logistic regression" (`survival::clogit`)
+- Suitable for panel data (e.g., our master data table)
+- Model includes mine-specific but time-invariant variables (e.g., same slope but different intercepts for different mines)
+- Logistic regression (for every mine)
+
+\[\Pr(Y=1|\mathbf{X})=F(\mathbf{X}) = \frac{1}{1+e^{-(\alpha+\boldsymbol\beta\mathbf{X})}}\]
+
+- Logistic regression with fixed effects (for the $i$-th mine)
+
+\[\Pr(Y=1|\mathbf{X},i)=F(\mathbf{x},i) = \frac{1}{1+e^{-(\alpha_i+\boldsymbol\beta\mathbf{x})}}\]
+
+# Results and Discussion
 
 ## Logistic Regression Without Fixed Effects
 
@@ -259,27 +288,26 @@ print(glm.performance$byClass)
 
 ## Logistic Regression Without Fixed Effects
 
-- Sort result based on number of deaths
+- True positives
 
 ```{r glm rank death}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
 head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10) %>% select(
-  mine.name, num.death, severe, prob, pred
+  mine.name, year, quarter, severe, pred
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
 
-<!--
 ## Logistic Regression Without Fixed Effects
 
-- Sort result based on model probability
+- Top predicted positives (possibly false positives)
 
 ```{r glm rank prob}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
-head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% select(
-  mine.name, num.death, severe, prob, pred
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10) %>% select(
+  mine.name, year, quarter, severe, pred
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
--->
+
 
 ## Logistic Regression with Fixed Effects
 
@@ -293,26 +321,27 @@ print(fe.div.performance$byClass)
 
 ## Logistic Regression with Fixed Effects
 
-- Sort result based on number of deaths
+- Top true positives (deadliest accidents)
 
 ```{r fe.div rank death}
-if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
 head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10) %>% select(
-  mine.name, num.death, severe, prob, pred
+  mine.name, year, quarter, severe, pred
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
 
 ## Logistic Regression with Fixed Effects
 
-- Sort result based on model probability
+- Top predicted positives (possibly false positives)
 
 ```{r fe.div rank prob}
-if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
 head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% select(
-  mine.name, num.death, severe, prob, pred
+  mine.name, year, quarter, severe, pred
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
 
+<!--
 ## New Era Mine
 
 - The American Coal Company New Era Mine occupies 6 slots on the top 10 list of most days lost due to accidents
@@ -322,6 +351,7 @@ if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData"
 top.days.lost <- complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost), mine.name) %>% select(mine.name, year, quarter, num.days.lost)
 head(top.days.lost, 10)
 ```
+-->
 
 ## New Era Mine
 
@@ -330,7 +360,7 @@ head(top.days.lost, 10)
 ```{r new era viol}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 yearly.viol <- complete.active.quarters %>% 
-  filter(mine_id == 1102752 & year < 2006) %>%
+  filter(mine_id == 1102752) %>%
   group_by(year) %>%
   summarise(count = sum(viol.quantity))
 qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
@@ -338,7 +368,48 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
       xlab = "Year", ylab = "Count")
 ```
 
-## Simple Linear Model on Number of Days Lost
+## New Labels Including Days Lost
+
+- Previously defined severe accidents and days lost $>$ 300
+
+```{r fe.div2}
+if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+print(fe.div2.performance$table)
+print(fe.div2.performance$byClass)
+```
+
+## New Labels Including Days Lost
+
+- Top true positives (deadliest accidents)
+
+```{r fe.div2 rank death}
+if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10) %>% select(
+  mine.name, year, quarter, severe, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+```
+
+## New Labels Including Days Lost
+
+- Top predicted positives (possibly false positives)
+
+```{r fe.div2 rank prob}
+if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
+head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% select(
+  mine.name, year, quarter, severe, pred
+) %>% mutate (mine.name = strtrim(mine.name, 40))
+```
+
+# Conclusion
+
+## Conclusion
+
+<!-- - Causal relationship between accidents and historical data -->
+- Summary
+    - Two deadliest mine accidents in the last decade: Upper Big Branch & Sago
+    - MSHA 
+
+## Appendix: Simple Linear Model
 
 - Adjusted $R^2=0.36$
 
@@ -351,13 +422,6 @@ num.days.lm <- lm(num.days.lost~last.quarter.lost+last.year.lost+last.three.year
            data=complete.active.quarters %>% filter(active))
 summary(num.days.lm)$coefficients
 ```
-
-# Conclusion
-
-## Conclusion
-
-<!-- - Causal relationship between accidents and historical data -->
-- TBD
 
 <!-- USEFUL LINKS:
 http://www.sr.bham.ac.uk/~ajrs/R/r-show_data.html

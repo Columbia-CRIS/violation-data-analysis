@@ -16,6 +16,16 @@ require(ggplot2)
 knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 ```
 
+## Raw Data
+
+### MSHA Accidents Table
+
+```{r msha accidents}
+if(!exists("accidents")) {load("./San Antonio/data/secret_ingredients.RData")}
+names(accidents[c(1, 14, 5:13, 19:20, 37:59)])
+```
+
+
 ## Accident Trends
 
 ### Fatality since 1983
