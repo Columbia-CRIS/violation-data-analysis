@@ -411,6 +411,15 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% se
 
 ## Unsupervised Clustering
 
+- Apply 3-means clustering to our consolidated data
+- Low-risk cluster, mid-risk cluster, and high-risk cluster
+
+```{r k-means}
+if(!exists("markov.mine")){load("./San Antonio/output/results_markov.RData")}
+markov.mine
+```
+
+
 ## Markov Chain
 
 # Conclusion
