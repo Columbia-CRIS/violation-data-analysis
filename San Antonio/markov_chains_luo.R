@@ -2,6 +2,7 @@ rm(list=ls())
 
 # initialize ----
 require(dplyr)
+require(plyr)
 require(markovchain)
 require(reshape)
 setwd("~/Git/violation-data-analysis")
@@ -16,8 +17,8 @@ print(clustering$centers)
 print(clustering$size)
 
 # assign low, mid, high risk labels
-unsorted.risk.label <- c("low", "mid", "high")
-sorted.risk.labels <- sort.int(clustering$centers[,1], index.return = TRUE)$ix
+risk.labels <- c("low", "mid", "high")
+cluster.to.risk.label <- sort.int(clustering$centers[,1], index.return = TRUE)$ix
 
 # Melted format containing quarter-year, mine_id allowing for markov chain analysis ----
 temp$cluster <- clustering$cluster
@@ -36,9 +37,9 @@ markov <- function(x){
     return (list("mine_id" = x[1], 
                  "markov_chain" = cur_markov_chain, 
                  "num_rows" = length(cluster_seq_raw),
-                 "low" = sorted.risk.labels[1] %in% cluster_sequence, 
-                 "mid" = sorted.risk.labels[2] %in% cluster_sequence, 
-                 "high" = sorted.risk.labels[3] %in% cluster_sequence
+                 "low" = cluster.to.risk.label[1] %in% cluster_sequence, 
+                 "mid" = cluster.to.risk.label[2] %in% cluster_sequence, 
+                 "high" = cluster.to.risk.label[3] %in% cluster_sequence
     )
     )
   }
@@ -82,13 +83,15 @@ for(i in 1:3){
 }
 
 print("Transition matrix probability")
-sorted.final.markov <- final_markov[sorted.risk.labels, sorted.risk.labels]
-colnames(sorted.final.markov) <- unsorted.risk.label
-rownames(sorted.final.markov) <- unsorted.risk.label
+sorted.final.markov <- final_markov[cluster.to.risk.label, cluster.to.risk.label]
+colnames(sorted.final.markov) <- risk.labels
+rownames(sorted.final.markov) <- risk.labels
 print(sorted.final.markov)
 
 # create Markov chain object
-markov.mine <- new("markovchain", states = unsorted.risk.label, byrow = TRUE,
+markov.mine <- new("markovchain", states = risk.labels, byrow = TRUE,
                    transitionMatrix = sorted.final.markov, name = "Mine")
 
-save(sorted.final.markov, clustering, markov.mine, file="./San Antonio/output/results_markov.RData")
+save(sorted.final.markov, clustering, markov.mine, 
+     risk.labels, cluster.to.risk.label,
+     file="./San Antonio/output/results_markov.RData")

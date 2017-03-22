@@ -1,10 +1,10 @@
 rm(list=ls())
 
 # initialize ----
-library(dplyr)
-library(survival)
-library(caret)
-library(e1071)
+require(dplyr)
+require(survival)
+require(caret)
+require(e1071)
 setwd("~/Git/violation-data-analysis")
 load("./San Antonio/output/result.RData")
 
@@ -126,13 +126,14 @@ fe.div2.result <- fe.div2.result %>% mutate(
     prob > 0.5, TRUE, FALSE
   )
 )
-head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10)
-head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
+# head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10)
+# head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
 
 
 # confusion matrix and other performance metrics
 fe.div2.performance <- confusionMatrix(data = fe.div2.result$pred, reference = fe.div2.result$severe, positive = "TRUE")
-print(fe.div2.performance)
+print(fe.div2.performance$table)
+print(c(fe.div2.performance$overall["Accuracy"], fe.div2.performance$byClass[c("Sensitivity", "Specificity", "Precision", "F1")]))
 
 # output file ----
 save(

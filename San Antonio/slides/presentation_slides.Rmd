@@ -16,6 +16,7 @@ output:
     incremental: false
     template: rmd_template.tex
     fig_height: 4.75
+    # fig_width: 4
     toc: true
     slide_level: 2
     includes:
@@ -27,6 +28,7 @@ knitr::opts_chunk$set(echo = FALSE, message=FALSE, fig.align = "center")
 options(scipen = 1, digits = 2)
 require(dplyr)
 require(ggplot2)
+require(markovchain)
 knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 ```
 
@@ -35,9 +37,11 @@ knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 ![CRIS Lab](CrisResearch720.png)
 
 <!-- https://aiche.confex.com/aiche/s17/webprogram/Paper480429.html -->
-# Introduction: A Data Approach to Mine Safety
+# Mine Safety: A Data-Driven Approach
 
 ## Systemic Risk
+
+\placelogofalse
 
 - Systemic disasters
     - SARS (2003)
@@ -53,10 +57,8 @@ knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 - Design complex systems
 - Analyze systemic risk
 
-<!-- 
-https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster
-https://arlweb.msha.gov/MEDIA/PRESS/2011/NR111206.asp 
--->
+<!-- https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster -->
+<!-- https://arlweb.msha.gov/MEDIA/PRESS/2011/NR111206.asp  -->
 ## Upper Big Branch Mine Disaster (2010)
 
 - April 5, 2010, Raleigh County, West Virginia, owned by Massey Energy
@@ -80,6 +82,7 @@ https://arlweb.msha.gov/MEDIA/PRESS/2011/NR111206.asp
     - Promote safe and healthful workplaces for U.S. miners
     - Develop and enforce safety and health rules
     - Provide technical, educational, and other types of assistance
+- A constantly improving industry in terms of safety
 
 ## Fatality Trend Since 1983
 
@@ -103,6 +106,7 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
     - Predict default probability within 18 months
     - Accidents: defaults a month or a year prior to application
     - Violations: missed payments, late payments, etc.
+- Can we develop a "credit score" for mine safety?
 
 # Methods: Data Sources and Model Preliminaries
 
@@ -110,15 +114,18 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
 
 - Link: <https://enforcedata.dol.gov/views/data_catalogs.php>
 - Updated daily or weekly
-- Enforecement Data Catalog
-    - MSHA Enforcement Data
-    - OSHA Enforcement Data
+- Publicly available 
+    - Department of Labor: MSHA, OSHA, etc.
+    - Other departments: EPA, FDA, DOJ, etc.
+    
+    <!-- - MSHA Enforcement Data -->
+    <!-- - OSHA Enforcement Data -->
     <!-- - Wage and Hour Compliance Action Data -->
     <!-- - OFCCP Compliance Evaluation and Complaint Investigation Data -->
     <!-- - EBSA Enforcement Data -->
     <!-- - Department of Justice -->
-    - EPA
-    - FDA
+    <!-- - EPA -->
+    <!-- - FDA -->
 
 ## MSHA Data: Sources
 
@@ -132,19 +139,20 @@ qplot(x = cal_yr, y = count, data = yearly.death, geom = c("point", "line"),
 ## MSHA Data: Advantages
 
 - Each mine has a unique mine ID, e.g., Upper Big Branch (4608436)
-- Rich details, e.g., selected attributes from the accidents table:
+- Rich details: e.g., classification, description, and severity
+- Selected attributes from the accidents table (omitting 42 attributes)
 
 ```{r msha accidents}
 if(!exists("accidents")) {load("./San Antonio/data/secret_ingredients.RData")}
-names(accidents[c(1, 14, 5:13, 19:20, 37:59)])
+names(accidents[c(1, 14, 19:20, 5:13, 37, 39, 49:50)])
 ```
 
 ## MSHA Data: Challenges
 
-- Missing data, typos
-- Inactive mines are not labeled
+- Missing data, human errors
+- No information about inactive/nonoperating mines
 - Most data are not numeric
-- Relatively few severe accidents ($\sim0.5\%$)
+- Lots of zeros, few severe accidents ($\sim0.5\%$)
 
 <!-- ## Model Preliminaries -->
 
@@ -154,16 +162,19 @@ names(accidents[c(1, 14, 5:13, 19:20, 37:59)])
 
 ## Consolidated Data
 
-- Combine and summarize accidents/violations based on mines
+- Group and summarize accidents/violations by mines
 - 664,128 rows, 10,377 unique mines
-- From 2000 to 2015 in quarters
+- From 2000 to 2015
 - Each row represents data for a unique combination of mine, year, and quarter
     - e.g., Upper Big Branch Mine in the second quarter of 2010
 - Each row contains both current and past information
+    - i.e., current quarter, past quarter, past year, and past three years
 
 ## Consolidated Data
 
-- Number of days lost (`num.days.lost`), numer of days restricted (`num.days.restrict`), number of deaths (`num.death`), number of permenant disabilities (`num.dis`), and number of violations (`viol.quantity`) 
+<!-- - Number of days lost (`num.days.lost`), numer of days restricted (`num.days.restrict`), number of deaths (`num.death`), number of permenant disabilities (`num.dis`), and number of violations (`viol.quantity`)  -->
+
+- All 25 attributes of the consolidated data
 
 ```{r master data}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
@@ -172,11 +183,15 @@ names(complete.active.quarters)
 
 ## Top 10 Fatal Accidents Since 2005
 
+- Query the consolidated data on the deadliest accidents
+
 ```{r top 10 fatality}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
 top.deaths <- complete.active.quarters %>% filter(active & year >= 2005) %>% arrange(desc(num.death), mine.name) %>% select(mine.name, mine_id, year, quarter, num.death)
 head(top.deaths, 10)
 ```
+
+- Plot violation trends prior to Upper Big Branch and Sago disasters
 
 ## Violation Trend: Upper Big Branch
 
@@ -248,9 +263,9 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 ## Predictive Model
 
 - Rising violation trends before disasters
-- A disaster classifier based on historical data?
+- Develop a disaster classifier based on historical data
 - Define a **severe** accident as one with death or permenant disability
-- Unbalanced data
+<!-- - Unbalanced data -->
 
 ```{r severe active}
 if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
@@ -269,33 +284,37 @@ print(severe.summary)
 ## Fixed-Mine Effects
 
 - Biostatisticians and epidemiologists call it "conditional logistic regression" (`survival::clogit`)
-- Suitable for **panel data** (e.g., our consolidated data)
-- Model includes mine-specific but time-invariant variables
-- Logistic regression (for every mine)
+- Suitable for **panel data** (e.g., longitudinal data, our consolidated data)
+- Model includes mine-specific biases
+- Logistic function (for every mine)
 
-\[\Pr(Y=1|\mathbf{X})=F(\mathbf{X}) = \frac{1}{1+e^{-(\alpha+\boldsymbol\beta\mathbf{X})}}\]
+\[\Pr(Y=1|\mathbf{X}) = \frac{1}{1+e^{-(\alpha+\boldsymbol\beta\mathbf{X})}}\]
 
-- Logistic regression with fixed effects (for the $i$-th mine)
+- Logistic function with fixed effects (for the $i$-th mine)
 
-\[\Pr(Y=1|\mathbf{X},i)=F(\mathbf{x},i) = \frac{1}{1+e^{-(\alpha_i+\boldsymbol\beta\mathbf{x})}}\]
+\[\Pr(Y=1|\mathbf{X},i) = \frac{1}{1+e^{-(\alpha_i+\boldsymbol\beta\mathbf{x})}}\]
 
 # Results and Discussion
 
 ## Logistic Regression Without Fixed Effects
-
-<!-- 解释 confusion matrix和 specificity -->
 
 - In-sample model
 
 ```{r glm}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
 print(glm.performance$table)
-print(glm.performance$byClass)
+print(c(glm.performance$overall["Accuracy"], glm.performance$byClass[c("Sensitivity", "Specificity", "Precision", "F1")]))
 ```
+
+- Accuracy = (TP + TN)/(P + N)
+- Sensitivity/recall = TP/P
+- Specificity = TN/N
+- Precision = TP/(TP + FP)
+- F1: harmonic mean of sensitivity and precision
 
 ## Logistic Regression Without Fixed Effects
 
-- Fail to predict top 10 true positives
+- Fails to predict top 10 deadliest disasters
 
 ```{r glm rank death}
 if (!exists("glm.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -306,7 +325,7 @@ head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name)
 
 ## Logistic Regression Without Fixed Effects
 
-- False positive predictions
+- List of false positive predictions based on predicted probability
 <!-- - Top predicted positives (possibly false positives) -->
 
 ```{r glm rank prob}
@@ -324,12 +343,12 @@ head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
 ```{r fe.div}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
 print(fe.div.performance$table)
-print(fe.div.performance$byClass)
+print(c(fe.div.performance$overall["Accuracy"], fe.div.performance$byClass[c("Sensitivity", "Specificity", "Precision", "F1")]))
 ```
 
 ## Logistic Regression with Fixed Effects
 
-- Successfully predict all top 10 true positives
+- Successfully predicts top 10 deadliest disasters
 
 ```{r fe.div rank death}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -340,7 +359,8 @@ head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.na
 
 ## Logistic Regression with Fixed Effects
 
-- False positive predictions
+- Still has a lot of false positive predictions
+- List of false positive predictions based on predicted probability
 
 ```{r fe.div rank prob}
 if (!exists("fe.div.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -348,6 +368,8 @@ head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% sel
   mine.name, year, quarter, severe, pred
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
+
+- What happened in the New Era Mine?
 
 <!--
 ## New Era Mine
@@ -360,6 +382,21 @@ top.days.lost <- complete.active.quarters %>% filter(active) %>% arrange(desc(nu
 head(top.days.lost, 10)
 ```
 -->
+
+## New Era Mine
+
+- Among the worst mines by number of days lost due to accidents
+
+```{r new-era-num-days-lost}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+head(
+  complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost)) %>% select(
+    mine.name, year, quarter, num.days.lost
+  )
+, 10)
+```
+
+- Rising violation trend from 2000 to 2005
 
 ## New Era Mine
 
@@ -379,17 +416,21 @@ qplot(x = year, y = count, data = yearly.viol, geom = c("point", "line"),
 
 ## New Labels Including Days Lost
 
-- Previously defined severe accidents and days lost $>$ 300
+- Updated severe accident label
+    - Previously defined criteria plus days lost $>$ 300
+- Redo out-of-sample model
 
 ```{r fe.div2}
 if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
 print(fe.div2.performance$table)
-print(fe.div2.performance$byClass)
+print(c(fe.div2.performance$overall["Accuracy"], fe.div2.performance$byClass[c("Sensitivity", "Specificity", "Precision", "F1")]))
 ```
+
+- Worse true positive rate, improved F1 score
 
 ## New Labels Including Days Lost
 
-- Successfully predict 9 out of top 10 true positives
+- Successfully predicts 9 out of top 10 deadliest accidents
 
 ```{r fe.div2 rank death}
 if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -400,7 +441,7 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.n
 
 ## New Labels Including Days Lost
 
-- 
+- Accidents of the New Era mine are now true positives
 
 ```{r fe.div2 rank prob}
 if (!exists("fe.div2.result")){load("./San Antonio/output/results_fixed_effects.RData")}
@@ -411,16 +452,43 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% se
 
 ## Unsupervised Clustering
 
-- Apply 3-means clustering to our consolidated data
-- Low-risk cluster, mid-risk cluster, and high-risk cluster
+- Apply $k$-means clustering to consolidated data on all 20 features
+- 3 clusters: `low`-risk, `mid`-risk, and `high`-risk
+- Selected cluster centers (omitting 15 features)
 
 ```{r k-means}
-if(!exists("markov.mine")){load("./San Antonio/output/results_markov.RData")}
-markov.mine
+if(!exists("clustering")){load("./San Antonio/output/results_markov.RData")}
+sorted.cluster.centers <- clustering$centers[cluster.to.risk.label,c("num.days.lost", "num.days.restrict", "num.death", "num.dis", "viol.quantity")]
+rownames(sorted.cluster.centers) <- risk.labels
+print(sorted.cluster.centers)
 ```
 
+- Cluster sizes
 
+```{r k-means sizes}
+if(!exists("clustering")){load("./San Antonio/output/results_markov.RData")}
+sorted.cluster.size <- matrix(data = clustering$size[cluster.to.risk.label], nrow = 1, ncol = 3)
+colnames(sorted.cluster.size) <- risk.labels
+rownames(sorted.cluster.size) <- "size"
+print(sorted.cluster.size)
+```
+
+<!-- https://cran.r-project.org/web/packages/markovchain/vignettes/an_introduction_to_markovchain_package.pdf -->
 ## Markov Chain
+
+- Overall transition matrix
+
+```{r markov-transition}
+if(!exists("markov.mine")){load("./San Antonio/output/results_markov.RData")}
+print(round(markov.mine[], 3))
+```
+
+- Steady-state distribution
+
+```{r markov-steady-state}
+if(!exists("markov.mine")){load("./San Antonio/output/results_markov.RData")}
+print(round(steadyStates(markov.mine), 3))
+```
 
 # Conclusion
 
@@ -429,13 +497,16 @@ markov.mine
 <!-- - Causal relationship between accidents and historical data -->
 - Summary
     - Two deadliest mine accidents in the last decade: Upper Big Branch & Sago
-    - MSHA 
+    - Rich MSHA data that need clean-up
+    - Supervised predictive model
+    - Unsupervised clustering of risk
 - Application
     - "Credit score" for mine safety
     - Regulators, mines, stakeholders
 - Future
+    - Improve model performance
     - Expand data: OSHA, EPA, etc.
-    - Models and techniques: artificial neural networks (restricted boltzmann machine), text mining, etc.
+    - Other techniques: artificial neural networks (restricted boltzmann machine), text mining, etc.
 
 ## Appendix: Simple Linear Model
 
