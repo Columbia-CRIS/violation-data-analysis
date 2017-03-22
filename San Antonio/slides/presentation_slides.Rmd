@@ -191,7 +191,7 @@ top.deaths <- complete.active.quarters %>% filter(active & year >= 2005) %>% arr
 head(top.deaths, 10)
 ```
 
-- Plot violation trends prior to Upper Big Branch and Sago disasters
+- Plot violation trends prior to disasters
 
 ## Violation Trend: Upper Big Branch
 
@@ -506,7 +506,7 @@ print(round(steadyStates(markov.mine), 3))
 - Future
     - Improve model performance
     - Expand data: OSHA, EPA, etc.
-    - Other techniques: artificial neural networks (restricted boltzmann machine), text mining, etc.
+    - Artificial neural networks (restricted boltzmann machine), text mining, etc.
 
 ## Appendix: Simple Linear Model
 
