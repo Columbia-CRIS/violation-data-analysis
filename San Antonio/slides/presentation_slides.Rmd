@@ -1,9 +1,9 @@
 ---
-title: "A Data-Driven Early Warning System for Mining Accident"
+title: "A Data-Driven Early Warning System for Mining Accidents"
 shorttitle: "Mining Accident Data Analysis"
 author: |
-  | Yu Luo, Ashutosh Nanda, Shiva Rajgopal, Vinay Ramesh,
-  | Venkat Venkatasubramanian, Zhizun Zhang, and Catherine Zhao
+  | Yu Luo, Ashutosh Nanda, Shivaram Rajgopal, Vinay Ramesh,
+  | Zhizun Zhang, Catherine Zhao, and Venkat Venkatasubramanian
 shortauthor: "Luo et al."
 institute: |
   | Chemical Engineering, Computer Science, and Business School
@@ -41,8 +41,6 @@ knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 
 ## Systemic Risk
 
-\placelogofalse
-
 - Systemic disasters
     - SARS (2003)
     - Northeast Blackout (2003)
@@ -54,8 +52,8 @@ knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
     - Cyber-physical security
     - Technological singularity
 - Fast-paced and connected
-- Design complex systems
-- Analyze systemic risk
+- Prevent systemic disasters
+- Analyze systemic risk: go beyond one-off accidents
 
 <!-- https://en.wikipedia.org/wiki/Upper_Big_Branch_Mine_disaster -->
 <!-- https://arlweb.msha.gov/MEDIA/PRESS/2011/NR111206.asp  -->
@@ -75,8 +73,7 @@ knitr::opts_knit$set(root.dir = "~/Git/violation-data-analysis")
 <!-- https://www.msha.gov/about/mission -->
 ## Mine Safety and Health Administration (MSHA)
 
-- Formed in	1977
-- Agency of the United States Department of Labor
+- Formed in	1977, agency of the U.S. Department of Labor
 - Mission
     - Prevent death, illness, and injury from mining
     - Promote safe and healthful workplaces for U.S. miners
@@ -450,7 +447,38 @@ head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob)), 10) %>% se
 ) %>% mutate (mine.name = strtrim(mine.name, 40))
 ```
 
-## Unsupervised Clustering
+# Conclusion
+
+## Conclusion
+
+<!-- - Causal relationship between accidents and historical data -->
+- Summary
+    - Two deadliest mine accidents in the last decade: Upper Big Branch & Sago
+    - Rich MSHA data that need clean-up
+    - Supervised predictive model
+- Application
+    - "Credit score" for mine safety
+    - Regulators, mines, stakeholders
+- Future
+    - Improve model performance
+    - Unsupervised clustering, neural nets, etc.
+    - Expand data: OSHA, EPA, etc.
+
+## Appendix: Simple Linear Model
+
+- Adjusted $R^2=0.36$
+
+```{r simple lm of days lost}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+num.days.lm <- lm(num.days.lost~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active))
+summary(num.days.lm)$coefficients
+```
+
+## Appendix: Unsupervised Clustering
 
 - Apply $k$-means clustering to consolidated data on all 20 features
 - 3 clusters: `low`-risk, `mid`-risk, and `high`-risk
@@ -474,7 +502,7 @@ print(sorted.cluster.size)
 ```
 
 <!-- https://cran.r-project.org/web/packages/markovchain/vignettes/an_introduction_to_markovchain_package.pdf -->
-## Markov Chain
+## Appendix: Markov Chain
 
 - Overall transition matrix
 
@@ -488,38 +516,6 @@ print(round(markov.mine[], 3))
 ```{r markov-steady-state}
 if(!exists("markov.mine")){load("./San Antonio/output/results_markov.RData")}
 print(round(steadyStates(markov.mine), 3))
-```
-
-# Conclusion
-
-## Conclusion
-
-<!-- - Causal relationship between accidents and historical data -->
-- Summary
-    - Two deadliest mine accidents in the last decade: Upper Big Branch & Sago
-    - Rich MSHA data that need clean-up
-    - Supervised predictive model
-    - Unsupervised clustering of risk
-- Application
-    - "Credit score" for mine safety
-    - Regulators, mines, stakeholders
-- Future
-    - Improve model performance
-    - Expand data: OSHA, EPA, etc.
-    - Artificial neural networks (restricted boltzmann machine), text mining, etc.
-
-## Appendix: Simple Linear Model
-
-- Adjusted $R^2=0.36$
-
-```{r simple lm of days lost}
-if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
-num.days.lm <- lm(num.days.lost~last.quarter.lost+last.year.lost+last.three.years.lost
-           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
-           +last.quarter.viol+last.year.viol+last.three.years.viol
-           +last.quarter.death+last.year.death+last.three.years.death, 
-           data=complete.active.quarters %>% filter(active))
-summary(num.days.lm)$coefficients
 ```
 
 <!-- USEFUL LINKS:
