@@ -1,0 +1,26 @@
+\frametitle{Appendix: Markov Chain}
+
+\begin{itemize}[<+->]
+\tightlist
+\item
+  Overall transition matrix
+%\end{itemize}
+
+\begin{verbatim}
+##        low   mid  high
+## low  0.997 0.003 0.000
+## mid  0.087 0.906 0.006
+## high 0.000 0.072 0.928
+\end{verbatim}
+
+%\begin{itemize}[<+->]
+%\tightlist
+\item
+  Steady-state distribution
+
+
+\begin{verbatim}
+##       low   mid  high
+## [1,] 0.97 0.028 0.003
+\end{verbatim}
+\end{itemize}

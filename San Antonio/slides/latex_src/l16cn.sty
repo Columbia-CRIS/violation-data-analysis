@@ -1,0 +1,150 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{custom}[2017/02/01 version 0.7 The Luo Yu Package]
+% use 'hidegraphics' option to hide graphics and accelerate compilation
+
+%% Import packages
+\RequirePackage{adjustbox}
+\RequirePackage{algorithm,algpseudocode}
+\RequirePackage{amsmath,amssymb,amsthm}
+\RequirePackage{booktabs}
+\RequirePackage{bbm}
+\RequirePackage{caption}
+\RequirePackage{color}
+\RequirePackage{geometry}
+\RequirePackage{graphicx}
+\RequirePackage{longtable} % for notation
+\RequirePackage{mfirstuc} % uppercase the first letter of a word
+\RequirePackage{pdfpages}
+\RequirePackage[]{lscape} % @l16cn (1/26): use "pdftex" option to rotate landscape pages CW 90 deg, otherwise, every page will be in portrait mode, regardless of the text orientation
+\RequirePackage[section]{placeins} % confine floats within the section where they are declared
+\RequirePackage{thmtools}
+\RequirePackage{tikz,tikz-qtree} % shape tools
+	% tikz preferences
+	\usetikzlibrary{trees,shapes,arrows,fit}
+    \tikzset{
+      invisible/.style={opacity=0},
+      visible on/.style={alt={#1{}{invisible}}},
+      alt/.code args={<#1>#2#3}{%
+        \alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}
+      }
+    }
+\RequirePackage{topcapt}
+\RequirePackage{verbatim}
+\RequirePackage{xifthen}
+
+%% 'hidegraphics' option: hide graphics for faster compilation
+\DeclareOption{hidegraphics}{
+  	\renewcommand{\includegraphics}[2][]{[hidden figure]}
+	\renewcommand{\includepdf}[2][]{[hidden pdf]}
+}
+
+\ProcessOptions\relax
+
+%% Customization for the 'beamer' class
+\@ifclassloaded{beamer}
+{
+	\RequirePackage{appendixnumberbeamer}
+	\newcommand{\highlight}[1]{\colorbox{yellow}{$\displaystyle #1$}}
+	\newcommand{\highlighttxt}[1]{\colorbox{yellow}{#1}}
+
+	\newcommand{\hl}[1]{\highlight{#1}}
+	\newcommand{\hltxt}[1]{\highlighttxt{#1}}
+
+	\newcommand<>{\hlonly}[1]{{\only#2\hl{#1}}} % highlight on slide <#2> only
+	\newcommand<>{\hlonlytxt}[1]{{\only#2\hltxt{#1}}} % highlight on slide <#2> only
+}
+
+%% Customization for the 'report' class
+\@ifclassloaded{report}
+{
+    \theoremstyle{plain}
+    \newtheorem{theorem}{Theorem}[chapter]
+    \theoremstyle{definition}
+    \newtheorem{definition}[theorem]{Definition}
+    \newtheorem{assumption}[theorem]{Assumption}
+    \newtheorem{lemma}[theorem]{Lemma}
+    \newtheorem{conjecture}[theorem]{Conjecture}
+	\renewcommand{\listtheoremname}{List of Theorems and Definitions} 
+	\RequirePackage[titletoc]{appendix} % @l16cn (1/24): titletoc shows Appendix A, Appendix B, ...	   
+}
+
+%% Notation shortcuts
+\def\bx{\mathbf{x}}
+\def\bv{\mathbf{v}}
+\def\bz{\mathbf{z}}
+\def\by{\mathbf{y}}
+\def\bfomega{\boldsymbol{\omega}}
+\def\mse{\operatorname{MSE}}
+\def\ones{\mathbf{1}}
+
+\newcommand{\sr}{soft regulation}
+\newcommand{\Sr}{Soft regulation}
+\newcommand{\SR}{Soft Regulation}
+
+\newcommand{\sfk}{soft feedback}
+\newcommand{\Sfk}{Soft feedback}
+\newcommand{\SFk}{Soft Feedback}
+
+\newcommand{\mac}{MACISTS}
+\newcommand{\Mac}{MACISTS}
+\newcommand{\MAC}{MACISTS}
+
+\newcommand{\mturk}{Amazon Mechanical Turk}
+
+\newcommand{\crit}{{\color{blue}Both the {\bf type of feedback} and {\bf its influence} are critical}}
+
+%% Macros
+\newcommand{\define}[2]{{\em #1}\footnote{{\em \makefirstuc{#1}}: #2}}
+\newcommand{\code}[1]{
+%	\pagestyle{empty}
+	\begin{singlespace}
+		\begin{scriptsize}
+			\verbatiminput{#1}
+		\end{scriptsize}
+	\end{singlespace}
+	}
+
+\newcommand{\norm}[1]{\left\Vert #1 \right\Vert}
+\newcommand{\al}[1]{\begin{equation}\begin{aligned} #1 \end{aligned}\end{equation}}
+\newcommand{\diag}[1]{\operatorname{diag}\big(#1\big)}
+\newcommand{\eq}[1]{\begin{equation} #1 \end{equation}}
+
+\newcommand{\caps}[2]{\caption[#1]{{\bf #1}.~#2}}
+\newcommand{\xcaption}[2][]{%
+	\ifthenelse{\isempty{#1}}{%
+		\caps{#2}{}
+	}{%
+		\caps{#1}{#2}
+	}
+}
+
+%% Referencing shortcuts (updated)
+% e.g., \asx{as_label} => Assumption 1.1 (p. 1)
+% \asx[,]{as_label} => Assumption 1.1, p. 1
+\newcommand{\algx}[2][]{\ifthenelse{\isempty{#1}}
+	{Algorithm~\ref{#2} (p.~\pageref{#2})}
+	{Algorithm~\ref{#2}, p.~\pageref{#2}}}
+\newcommand{\appx}[2][]{\ifthenelse{\isempty{#1}}
+	{Appendix~\ref{#2} (p.~\pageref{#2})}
+	{Appendix~\ref{#2}, p.~\pageref{#2}}}
+\newcommand{\asx}[2][]{\ifthenelse{\isempty{#1}}
+	{Assumption~\ref{#2} (p.~\pageref{#2})}
+	{Assumption~\ref{#2}, p.~\pageref{#2}}}
+\newcommand{\defx}[2][]{\ifthenelse{\isempty{#1}}
+	{Definition~\ref{#2} (p.~\pageref{#2})}
+	{Definition~\ref{#2}, p.~\pageref{#2}}}	
+\newcommand{\figx}[2][]{\ifthenelse{\isempty{#1}}
+	{Fig.~\ref{#2} (p.~\pageref{#2})}
+	{Fig.~\ref{#2}, p.~\pageref{#2}}}		
+\newcommand{\secx}[2][]{\ifthenelse{\isempty{#1}}
+	{Section~\ref{#2} (p.~\pageref{#2})}
+	{Section~\ref{#2}, p.~\pageref{#2}}}
+\newcommand{\tabx}[2][]{\ifthenelse{\isempty{#1}}
+	{Table~\ref{#2} (p.~\pageref{#2})}
+	{Table~\ref{#2}, p.~\pageref{#2}}}	
+\newcommand{\thmx}[2][]{\ifthenelse{\isempty{#1}}
+	{Theorem~\ref{#2} (p.~\pageref{#2})}
+	{Theorem~\ref{#2}, p.~\pageref{#2}}}
+\newcommand{\secref}[1]{\paragraph{\ref{#1}~\nameref{#1} (p.~\pageref{#1})}}	
+
+\endinput	

@@ -12,7 +12,7 @@ shortinstitute: "Columbia University"
 date: "3/27/2017"
 output: 
   beamer_presentation:
-    keep_tex: false
+    keep_tex: true
     incremental: false
     template: rmd_template.tex
     fig_height: 4.75
@@ -389,7 +389,7 @@ if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData"
 head(
   complete.active.quarters %>% filter(active) %>% arrange(desc(num.days.lost)) %>% select(
     mine.name, year, quarter, num.days.lost
-  )
+  ) %>% rename(days.lost = num.days.lost)
 , 10)
 ```
 
@@ -482,11 +482,11 @@ summary(num.days.lm)$coefficients
 
 - Apply $k$-means clustering to consolidated data on all 20 features
 - 3 clusters: `low`-risk, `mid`-risk, and `high`-risk
-- Selected cluster centers (omitting 15 features)
+- Selected cluster centers (omitting 17 features)
 
 ```{r k-means}
 if(!exists("clustering")){load("./San Antonio/output/results_markov.RData")}
-sorted.cluster.centers <- clustering$centers[cluster.to.risk.label,c("num.days.lost", "num.days.restrict", "num.death", "num.dis", "viol.quantity")]
+sorted.cluster.centers <- clustering$centers[cluster.to.risk.label,c("num.days.lost", "num.days.restrict", "num.death")]#, "num.dis", "viol.quantity")]
 rownames(sorted.cluster.centers) <- risk.labels
 print(sorted.cluster.centers)
 ```

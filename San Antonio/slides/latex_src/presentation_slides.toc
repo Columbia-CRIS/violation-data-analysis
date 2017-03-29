@@ -1,0 +1,5 @@
+\beamer@endinputifotherversion {3.36pt}
+\beamer@sectionintoc {1}{Mine Safety: A Data-Driven Approach}{4}{0}{1}
+\beamer@sectionintoc {2}{Methods: Data Sources and Model Preliminaries}{39}{0}{2}
+\beamer@sectionintoc {3}{Results and Discussion}{77}{0}{3}
+\beamer@sectionintoc {4}{Conclusion}{99}{0}{4}
