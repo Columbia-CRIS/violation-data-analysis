@@ -3,7 +3,7 @@
 rm(list=ls())
 require(dplyr)
 setwd("~/Git/violation-data-analysis") # !!CHANGE WORKING DIR TO MATCH YOUR CASE!!
-dest.dir <- "./Santa Antonio/data"
+dest.dir <- "./Houston/data"
 dir.create(file.path(dest.dir))
 
 # Import violation ----
