@@ -86,7 +86,7 @@ death_rollover <- roll_over(actual_accidents,
                             end_year)
 colnames(death_rollover) <- c(
   "MINE_ID", "QUARTER", "YEAR",
-  "NUM_DAYS_DEATH", "LAST_QUARTER_DAYS_DEATH", "LAST_YEAR_DAYS_DEATH", "LAST_THREE_YEARS_DAYS_DEATH"
+  "NUM_DEATH", "LAST_QUARTER_DEATH", "LAST_YEAR_DEATH", "LAST_THREE_YEARS_DEATH"
 )
 rm(quarter_level_num_deaths)
 
@@ -100,7 +100,7 @@ dis_rollover <- roll_over(actual_accidents,
                           end_year)
 colnames(dis_rollover) <- c(
   "MINE_ID", "QUARTER", "YEAR",
-  "NUM_DAYS_DIS", "LAST_QUARTER_DAYS_DIS", "LAST_YEAR_DAYS_DIS", "LAST_THREE_YEARS_DAYS_DIS"
+  "NUM_DIS", "LAST_QUARTER_DIS", "LAST_YEAR_DIS", "LAST_THREE_YEARS_DIS"
 )
 rm(quarter_level_num_perm_dis)
 
@@ -156,6 +156,6 @@ temp <- temp[, c(1, 29:ncol(temp), 2:3, 28, 4:27)]
 
 # result
 complete_active_quarters <- temp
-save(complete_active_quarters, file="./Houston/output/Result.RData")
+save(complete_active_quarters, file="./Houston/output/Consolidated.RData")
 
 # see simple_lm.R for simple lm
