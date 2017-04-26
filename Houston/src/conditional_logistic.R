@@ -5,10 +5,11 @@ require(dplyr)
 require(survival)
 require(caret)
 require(e1071)
+library(plm)
 
 # choose working directory
 setwd("C:/Users/CATHY/OneDrive/Documents/2016-2017 Junior/15 Mines Research/violation-data-analysis")
-setwd("~/Git/violation-data-analysis")
+#setwd("~/Git/violation-data-analysis")
 
 # load consolidated data
 load("./Houston/output/Consolidated.RData")
@@ -40,11 +41,14 @@ in_sample_model <- clogit(SEVERE ~
                          LAST_QUARTER_DEATH + LAST_YEAR_DEATH + LAST_THREE_YEARS_DEATH +
                          LAST_QUARTER_DIS + LAST_YEAR_DIS + LAST_THREE_YEARS_DIS +
                          LAST_QUARTER_VIOLATION + LAST_YEAR_VIOLATION + LAST_THREE_YEARS_VIOLATION +
-                         LAST_QUARTER_PENALTY + LAST_YEAR_PENALTY + LAST_THREE_YEARS_PENALTY +
-                           strata(MINE_ID), #COAL_METAL_IND, CURRENT_MINE_TYPE), 
-                         data = labeled_data
+                         LAST_QUARTER_PENALTY + LAST_YEAR_PENALTY + LAST_THREE_YEARS_PENALTY
+                         #+ strata(MINE_ID),
+                         + strata(CURRENT_MINE_TYPE,COAL_METAL_IND), 
+                         data = labeled_data, method="breslow"
                        )
 summary(in_sample_model)
+
+labeled_data
 
 # test the fixed effects model (see top 20 fatal accidents since 2005)
 in_sample_prediction <- predict(object = in_sample_model, type = "lp") %>% sigmoid()
@@ -70,3 +74,4 @@ save(
      sigmoid,
      in_sample_result, in_sample_performance,
      file="./Houston/output/Result_clogit.RData")
+

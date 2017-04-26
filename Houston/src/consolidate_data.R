@@ -148,7 +148,7 @@ temp[is.na(temp)] <- 0
 temp <- temp %>% mutate(ACTIVE= ifelse(rowSums(temp[,4:ncol(temp)]) > 0, TRUE,FALSE))
 
 #adding attributes of mine
-mines <- Mines %>% select(MINE_ID, CURRENT_MINE_NAME, COAL_METAL_IND, CURRENT_MINE_TYPE, NO_EMPLOYEES,CURRENT_STATUS_DT)
+mines <- Mines %>% select(MINE_ID, CURRENT_MINE_NAME, COAL_METAL_IND, CURRENT_MINE_TYPE)
 temp <- merge(temp, mines, by = "MINE_ID", all.x=TRUE)
 
 #rearranging columns
