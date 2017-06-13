@@ -1,4 +1,8 @@
-rm(list=ls())
+if(!exists("is_run_parent")){
+  rm(list=ls())
+  # setwd("C:/Users/CATHY/OneDrive/Documents/2016-2017 Junior/15 Mines Research/violation-data-analysis")
+  setwd("~/Git/violation-data-analysis")
+}
 # Upper Big Branch: 4608436
 # Inputs: raw accidents data and final data with only active mine-quarters
 # Output: days lost, days restrict, deaths, and violations with only active mine-quarters
@@ -6,19 +10,16 @@ rm(list=ls())
 # setup
 require(dplyr)
 library(RcppRoll)
-setwd("C:/Users/CATHY/OneDrive/Documents/2016-2017 Junior/15 Mines Research/violation-data-analysis")
-#setwd("~/Git/violation-data-analysis")
+source("./Houston/src/prepare_violation.R")
+source("./Houston/src/roll_over.R")
 
 # load Accidents, Accidents.definition, AssessedViolation, AssedViolation.definition, Mines, Mines.definition, roll_over
 if(!exists("Accidents") | 
    !exists("AssessedViolations") | 
-   !exists("Mines")|
-   !exists("roll_over")) {
+   !exists("Mines")) {
   load("./Houston/data/Accidents.RData")
   load("./Houston/data/AssessedViolations.RData")
   load("./Houston/data/Mines.RData")
-  load("./Houston/data/roll_over.RData")
-  load("./Houston/data/prepare_violation.RData")
   print("raw RData loaded")
 }
 

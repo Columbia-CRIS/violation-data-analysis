@@ -1,8 +1,10 @@
 # Setup ----
 # All data are after 2000
-rm(list=ls())
+if(!exists("is_run_parent")){
+  rm(list=ls())
+  setwd("~/Git/violation-data-analysis") # !!CHANGE WORKING DIR TO MATCH YOUR CASE!!
+}
 require(dplyr)
-setwd("~/Git/violation-data-analysis") # !!CHANGE WORKING DIR TO MATCH YOUR CASE!!
 dest.dir <- "./Houston/data"
 dir.create(file.path(dest.dir))
 
@@ -12,9 +14,11 @@ dir.create(file.path(dest.dir))
 temp <- tempfile()
 download.file(url = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/AssessedViolations.zip",
               destfile = temp)
-AssessedViolations <- read.table(file = unzip(zipfile = temp, files = "AssessedViolations.txt"), 
+assessedviolations.txt <- unzip(zipfile = temp, files = "AssessedViolations.txt")
+AssessedViolations <- read.table(file = assessedviolations.txt, 
                                  sep = "|", stringsAsFactors = FALSE, fill = TRUE, header = TRUE)
 unlink(temp)
+unlink(assessedviolations.txt)
 sapply(AssessedViolations, class)
 
 # download and import violation definition
@@ -33,9 +37,11 @@ save(AssessedViolations, AssessedViolations.definition, file = file.path(dest.di
 temp <- tempfile()
 download.file(url = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/Accidents.zip",
               destfile = temp)
-Accidents <- read.table(file = unzip(zipfile = temp, files = "Accidents.txt"), 
+accidents.txt <- unzip(zipfile = temp, files = "Accidents.txt")
+Accidents <- read.table(file = accidents.txt, 
                         sep = "|", stringsAsFactors = FALSE, fill = TRUE, header = TRUE)
 unlink(temp)
+unlink(accidents.txt)
 sapply(Accidents, class)
 
 # accident definition
@@ -54,9 +60,11 @@ save(Accidents, Accidents.definition, file = file.path(dest.dir, "Accidents.RDat
 temp <- tempfile()
 download.file(url = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/Mines.zip",
               destfile = temp)
-Mines <- read.table(file = unzip(zipfile = temp, files = "Mines.txt"), 
+mines.txt <- unzip(zipfile = temp, files = "Mines.txt")
+Mines <- read.table(file = mines.txt, 
                     sep = "|", stringsAsFactors = FALSE, fill = TRUE, header = TRUE)
 unlink(temp)
+unlink(mines.txt)
 sapply(Mines, class)
 
 # mine definition
