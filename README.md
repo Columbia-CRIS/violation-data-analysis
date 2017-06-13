@@ -37,6 +37,10 @@ Create a statistical model as follows:
 
 ## Updates
 
+#### 06/13/2017
+
+- Updated `README.md`
+
 #### 06/12/2017
 
 - Minor edits on Catherine's codes
