@@ -37,11 +37,11 @@ Create a statistical model as follows:
 
 ## Updates
 
-#### 06/13/2017
+#### 2017-06-13
 
 - Updated `README.md`
 
-#### 06/12/2017
+#### 2017-06-12
 
 - Minor edits on Catherine's codes
     + Added `/Houston/src/main.R`
