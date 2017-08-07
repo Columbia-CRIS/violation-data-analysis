@@ -111,3 +111,10 @@ ENV/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Software temp files #
+#######################
+*.m~
+*.aux
+*.blg
+*.out
