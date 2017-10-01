@@ -9,7 +9,7 @@ dest.dir <- "./Houston/data"
 dir.create(file.path(dest.dir))
 
 # Import violation ----
-# Date retried: 4/8/2017
+# Date retrieved: 4/8/2017
 # download and import violation table
 temp <- tempfile()
 download.file(url = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/AssessedViolations.zip",
@@ -32,7 +32,7 @@ unlink(temp)
 save(AssessedViolations, AssessedViolations.definition, file = file.path(dest.dir, "AssessedViolations.RData"))
 
 # Import accidents ----
-# Date retried: 4/8/2017
+# Date retrieved: 4/8/2017
 # accident table
 temp <- tempfile()
 download.file(url = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/Accidents.zip",
@@ -55,7 +55,7 @@ unlink(temp)
 save(Accidents, Accidents.definition, file = file.path(dest.dir, "Accidents.RData"))
 
 # Import mines ----
-# Date retried: 4/8/2017
+# Date retrieved: 4/8/2017
 # mine table
 temp <- tempfile()
 download.file(url = "https://arlweb.msha.gov/OpenGovernmentData/DataSets/Mines.zip",
