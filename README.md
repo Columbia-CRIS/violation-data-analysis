@@ -16,8 +16,11 @@ Create a statistical model as follows:
 
 - Current data set used for this project: https://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
 - Other data set: https://enforcedata.dol.gov/views/data_catalogs.php
-- **IMPORTANT**: [arlweb.msha.gov](arlweb.msha.gov) no longer includes proper headers in their data dumps (i.e., the first row contains actual values instead of column names). 
-- Old data sets are uploaded to GitHub via Git Large File Storage (LFS). [Install](https://git-lfs.github.com) Git LFS to work with large files.
+- **IMPORTANT**: [arlweb.msha.gov](arlweb.msha.gov) no longer includes proper headers in their data dumps (i.e., the first row contains actual values instead of column names). To download the working `RData` files, follow these instructions:
+    + Old data sets are uploaded to GitHub via Git Large File Storage (LFS). [Install](https://git-lfs.github.com) Git LFS to work with large files.
+    + Run `git lfs install` to install the Git command line extension (you only need to install once).
+    + Clone this repo and the full `RData` files will be downloaded to your local repo.
+        * If you've already cloned this repo before installing LFS, remove it and clone again so that the `RData` files can be properly downloaded.
 
 ## Repository Hierarchy
 
