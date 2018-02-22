@@ -53,7 +53,7 @@ Create a statistical model as follows:
 
 #### 2017-06-13
 
-- Updated `README.md`
+- Updated `README.md` 
 
 #### 2017-06-12
 
