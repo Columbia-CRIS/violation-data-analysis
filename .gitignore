@@ -118,3 +118,6 @@ Thumbs.db
 *.aux
 *.blg
 *.out
+
+# R temp files #
+.Rhistory

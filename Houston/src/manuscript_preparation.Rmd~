@@ -1,0 +1,363 @@
+---
+title: "Manuscript Preparation"
+author: "Albert"
+date: "4/13/2018"
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+options(scipen = 1, digits = 2)
+require(dplyr)
+require(ggplot2)
+require(RcppRoll)
+require(markovchain)
+require(reshape)
+require(survival)
+require(caret)
+require(e1071)
+source("./Houston/src/prepare_violation.R")
+source("./Houston/src/roll_over.R")
+
+knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
+```
+
+## Data Preparation
+
+### Load data
+
+Loading raw data.    
+
+```{r load data, include=FALSE}
+if(!exists("Accidents") | 
+   !exists("AssessedViolations") | 
+   !exists("Mines")) {
+  load("./Houston/data/Accidents.RData")
+  load("./Houston/data/AssessedViolations.RData")
+  load("./Houston/data/Mines.RData")
+  print("raw RData loaded")
+}
+```
+
+Let's examine the loaded raw datasets.
+
+```{r data preview, include=FALSE}
+# Attributes in Accidents Table
+head(Accidents)
+
+# Attributes in Violations Table
+head(AssessedViolations)
+
+# Attributes in Mines Table
+head(Mines)
+```
+
+The `result.RData` from San Antonio folder is the same as the `Consolidated.RData` in Houston folder.
+     
+```{r load result, include=FALSE}
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+print("load previous consolidated data")
+
+colnames(complete.active.quarters)
+```
+
+### Data Visualization
+
+If we define severe as death plus permenant disability, then severe composition is shown as following.    
+
+```{r severe1}
+# options(digits = 1)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+severe.summary <- complete.active.quarters %>%
+  filter(active) %>%
+  mutate(severe = ifelse(
+    num.death + num.dis > 0, TRUE, FALSE
+  )) %>%
+  group_by(severe) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n / sum(n) * 100)
+print(severe.summary)
+```
+
+If we redefine severe as death or permenant diability greater than 0, or more than 300 days lost or days retrict, then the severe composition is following.
+```{r severe2}
+# options(digits = 1)
+if(!exists("complete.active.quarters")){load("./San Antonio/output/result.RData")}
+severe.summary <- complete.active.quarters %>%
+  filter(active) %>%
+  mutate(severe = ifelse(
+    (num.death + num.dis > 0) | (num.days.lost + num.days.restrict > 300), TRUE, FALSE
+  )) %>%
+  group_by(severe) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n / sum(n) * 100)
+print(severe.summary)
+```
+   
+## Model Development
+
+### Linear Regression
+    
+Read these two links first: [How to interpret regression p-values](http://blog.minitab.com/blog/adventures-in-statistics-2/how-to-interpret-regression-analysis-results-p-values-and-coefficients) and
+[How to interpret the output of the summary() method for an lm object](http://stats.stackexchange.com/questions/59250/how-to-interpret-the-output-of-the-summary-method-for-an-lm-object-in-r)
+
+We first examine the linearity between "number of days lost" and "last three years' number of violations". 
+
+```{r check linearity, include=FALSE}
+ggplot(data=complete.active.quarters, mapping = aes(x=last.three.years.viol,y=num.days.lost))+geom_point()
+```
+It turns out that these variables do not show linear correlation, which violates the linear regression assumption.
+
+Linear regression on num of days lost or restricted:
+
+```{r, include=FALSE}
+if(!exists("complete_active_quarters")){load("./Houston/output/Consolidated.RData")}
+colnames(complete_active_quarters)
+
+num.days.lm <- lm(0*num.death+1*num.days.lost+1*num.days.restrict~last.quarter.lost+last.year.lost+last.three.years.lost
+           +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+           +last.quarter.viol+last.year.viol+last.three.years.viol
+           +last.quarter.death+last.year.death+last.three.years.death, 
+           data=complete.active.quarters %>% filter(active))
+summary(num.days.lm)
+```
+Linear regression on num of deaths:
+
+```{r echo=FALSE}
+summary(lm(num.death~last.three.years.lost+last.quarter.viol+last.year.viol, data=complete.active.quarters %>% filter(active)))
+```
+
+### Logistic Regression
+
+```{r logistic reg, include=FALSE}
+# label data ----
+labeled.data.death <- complete.active.quarters %>% filter(active) %>% mutate(
+  severe = ifelse(
+    num.death + num.dis > 0, TRUE, FALSE
+  )
+)
+labeled.data.lost <- complete.active.quarters %>% filter(active) %>% mutate(
+  severe = ifelse(
+    num.death + num.dis > 0 | num.days.lost > 300, TRUE, FALSE
+  )
+)
+
+# logistic regression without fixed effects ----
+# regular logistic regression model
+glm.model <- glm(severe ~ 
+                   last.quarter.lost+last.year.lost+last.three.years.lost
+                 +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+                 +last.quarter.viol+last.year.viol+last.three.years.viol
+                 +last.quarter.death+last.year.death+last.three.years.death,
+                 data = labeled.data.death, family = binomial(link='logit'))
+summary(glm.model)
+
+glm.prediction <- predict(object = glm.model, type = "response")
+glm.result <- labeled.data.death %>% select(mine_id, mine.name, year, quarter, num.death, num.dis, severe)
+glm.result$prob <- glm.prediction
+glm.result <- glm.result %>% mutate(
+  pred = ifelse(
+    prob > 0.5, TRUE, FALSE
+  )
+)
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10)
+head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
+
+glm.performance <- confusionMatrix(data = glm.result$pred, reference = glm.result$severe, positive = "TRUE")
+print(glm.performance)	
+```
+
+### Conditional Logistic Regression
+
+```{r fixed effect, include=FALSE}
+# fixed effects on training and testing data ----
+# train and test
+set.seed(1)
+data.len <- nrow(labeled.data.death)
+train.indices <- sample(seq_len(nrow(labeled.data.death)), size = floor(data.len / 2))
+
+labeled.data.death.train <- labeled.data.death[train.indices, ]
+labeled.data.death.result <- labeled.data.death[-train.indices, ]
+labeled.data.death.result <- labeled.data.death.result %>% filter(is.element(mine_id, unique(labeled.data.death.train$mine_id)))
+
+fe.div.model <- clogit(severe ~ last.quarter.lost+last.year.lost+last.three.years.lost
+                   +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+                   +last.quarter.viol+last.year.viol+last.three.years.viol
+                   +last.quarter.death+last.year.death+last.three.years.death
+                   + strata(mine_id), data = labeled.data.death.train)
+summary(fe.div.model)
+
+fe.div.prediction <- predict(object = fe.div.model, newdata = labeled.data.death.result,type = "lp") %>% sigmoid()
+fe.div.result <- labeled.data.death.result %>% select(mine_id, mine.name, year, quarter, num.death, num.dis, severe)
+fe.div.result$prob <- fe.div.prediction
+fe.div.result <- fe.div.result %>% mutate(
+  pred = ifelse(
+    prob > 0.5, TRUE, FALSE
+  )
+)
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10)
+head(fe.div.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
+
+# confusion matrix and other performance metrics
+#fe.div.performance <- confusionMatrix(data = fe.div.result$pred, reference = fe.div.result$severe, positive = "TRUE")
+fe.div.performance <- table(fe.div.result$pred, fe.div.result$severe)
+print(fe.div.performance)
+
+# fixed effects on training and testing data (using labeled.data.lost) ----
+# fe.div + num.days.lost: train and test
+labeled.data.lost.train <- labeled.data.lost[train.indices, ]
+labeled.data.lost.result <- labeled.data.lost[-train.indices, ]
+labeled.data.lost.result <- labeled.data.lost.result %>% filter(is.element(mine_id, unique(labeled.data.lost.train$mine_id)))
+
+fe.div2.model <- clogit(severe ~ last.quarter.lost+last.year.lost+last.three.years.lost
+                       +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+                       +last.quarter.viol+last.year.viol+last.three.years.viol
+                       +last.quarter.death+last.year.death+last.three.years.death
+                       + strata(mine_id), data = labeled.data.lost.train)
+summary(fe.div2.model)
+
+fe.div2.prediction <- predict(object = fe.div2.model, newdata = labeled.data.lost.result,type = "lp") %>% sigmoid()
+fe.div2.result <- labeled.data.lost.result %>% select(mine_id, mine.name, year, quarter, num.death, num.dis, severe)
+fe.div2.result$prob <- fe.div2.prediction
+fe.div2.result <- fe.div2.result %>% mutate(
+  pred = ifelse(
+    prob > 0.5, TRUE, FALSE
+  )
+)
+# head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10)
+# head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
+
+# confusion matrix and other performance metrics
+fe.div2.performance <- confusionMatrix(data = fe.div2.result$pred, reference = fe.div2.result$severe, positive = "TRUE")
+print(fe.div2.performance$table)
+print(c(fe.div2.performance$overall["Accuracy"], fe.div2.performance$byClass[c("Sensitivity", "Specificity", "Precision", "F1")]))   
+```
+
+### Clustering
+
+First, we cluster the data using K-means.    
+
+```{r clustering, include=FALSE}
+# clustering ----
+temp <- complete.active.quarters %>% filter(active==TRUE)
+set.seed(20)
+clustering <- kmeans(temp[, 6:ncol(temp)], 3, nstart=20)
+freq_table <- table(clustering$cluster)
+
+print(clustering$centers)
+print(clustering$size)
+```
+
+Then, let's visualize the clusters.
+
+```{r cluster visualization, include=FALSE}
+# plot `num.death` vs `last.three.years.lost`
+clustering$cluster <- as.factor(clustering$cluster)
+ggplot(temp, aes(num.death, last.three.years.lost, color = clustering$cluster)) + geom_point()
+```
+    
+### Markov Chain
+
+```{r markov, include=FALSE}
+# assign low, mid, high risk labels
+risk.labels <- c("low", "mid", "high")
+cluster.to.risk.label <- sort.int(clustering$centers[,1], index.return = TRUE)$ix
+
+# Melted format containing quarter-year, mine_id allowing for markov chain analysis ----
+temp$cluster <- clustering$cluster
+temp$date <- paste(as.character(temp$year), "-" , as.character(temp$quarter))
+temp2 <- temp %>% select(mine_id, cluster, date)
+melted <- melt(temp2, id=c("mine_id", "date"))
+aggregate_cluster_seq <- cast(melted, mine_id~date)
+
+# Markov Chain function ----
+markov <- function(x){
+  x <- as.integer(x)
+  cluster_seq_raw <- x[!is.na(x)]
+  if(length(cluster_seq_raw) > 1){
+    cluster_sequence <- cluster_seq_raw[2:length(cluster_seq_raw)]
+    cur_markov_chain <- createSequenceMatrix(cluster_sequence, sanitize = FALSE)
+    return (list("mine_id" = x[1], 
+                 "markov_chain" = cur_markov_chain, 
+                 "num_rows" = length(cluster_seq_raw),
+                 "low" = cluster.to.risk.label[1] %in% cluster_sequence, 
+                 "mid" = cluster.to.risk.label[2] %in% cluster_sequence, 
+                 "high" = cluster.to.risk.label[3] %in% cluster_sequence
+    )
+    )
+  }
+  return (list("mine_id" = x[1], 
+               "markov_chain" = NA, 
+               "num_rows" = 0,
+               "low" = FALSE, "mid" = FALSE, "high" = FALSE
+  )
+  )
+}
+
+# create mine-date transition matrices ----
+result<-apply(aggregate_cluster_seq, 1, markov)
+
+# Create Overall transition matrix ----
+markov_chains_ind <- sapply(result, "[[", 2)
+
+#adding matrix of different dimentions, source: http://stackoverflow.com/questions/13571359/join-and-sum-not-compatible-matrices
+add_matrices_1 <- function(...) {
+  a <- list(...)
+  cols <- sort(unique(unlist(lapply(a, colnames))))
+  rows <- sort(unique(unlist(lapply(a, rownames))))
+  out <- array(0, dim=c(length(rows), length(cols)), dimnames=list(rows,cols))
+  for(M in a) { out[rownames(M), colnames(M)] <- out[rownames(M), colnames(M)] + M }
+  return(out)
+}
+
+final_transition<- matrix(rep(0,times= 9), ncol = 3, nrow = 3)
+colnames(final_transition) <- c(1,2,3)
+rownames(final_transition) <- c(1,2,3)
+
+for(i in 1:length(markov_chains_ind)){
+  final_transition <- add_matrices_1(final_transition,markov_chains_ind[[i]])
+}
+print("Tranition matrix frequency")
+final_transition
+
+final_markov<- matrix(rep(0,times= 9), ncol = 3, nrow = 3)
+for(i in 1:3){
+  final_markov[i,] <- final_transition[i,]/sum(final_transition[i,])  
+}
+
+print("Transition matrix probability")
+sorted.final.markov <- final_markov[cluster.to.risk.label, cluster.to.risk.label]
+colnames(sorted.final.markov) <- risk.labels
+rownames(sorted.final.markov) <- risk.labels
+print(sorted.final.markov)
+```
+
+### SVM
+
+We try to classify risky mines using SVM.
+
+```{r svm, include=FALSE}
+# check train and test data
+head(labeled.data.lost.train)
+head(labeled.data.lost.result)
+
+# convert label from `bool` to `int`
+labeled.data.lost.train <- labeled.data.lost.train %>% mutate(severe = severe*1)
+labeled.data.lost.result <- labeled.data.lost.result %>% mutate(severe = severe*1)
+
+svm.model <- svm(severe ~ 
+                   last.quarter.lost+last.year.lost+last.three.years.lost
+                 +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+                 +last.quarter.viol+last.year.viol+last.three.years.viol
+                 +last.quarter.death+last.year.death+last.three.years.death,
+                 data=labeled.data.lost.train, method="C-classification", kernel="linear")
+summary(svm.model)
+
+pred.train <- predit(svm.model, labeled.data.lost.train)
+mean(pred.train==labeled.data.lost.train$severe)
+```
+
+## Evaluation
