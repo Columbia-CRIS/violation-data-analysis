@@ -19,10 +19,16 @@ require(reshape)
 require(survival)
 require(caret)
 require(e1071)
-source("./Houston/src/prepare_violation.R")
-source("./Houston/src/roll_over.R")
+knitr::opts_knit$set(root.dir = "~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
 
-knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
+
+
+# source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/prepare_violation.R")
+# source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/roll_over.R")
+
+# knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
+
+
 ```
 
 ## Data Preparation
@@ -32,6 +38,8 @@ knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") 
 Loading raw data.    
 
 ```{r load data, include=FALSE}
+source("./Houston/src/prepare_violation.R")
+source("./Houston/src/roll_over.R")
 if(!exists("Accidents") | 
    !exists("AssessedViolations") | 
    !exists("Mines")) {
@@ -166,7 +174,7 @@ glm.result <- glm.result %>% mutate(
 head(glm.result %>% filter(year >= 2005) %>% arrange(desc(num.death), mine.name), 10)
 head(glm.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
 
-glm.performance <- confusionMatrix(data = glm.result$pred, reference = glm.result$severe, positive = "TRUE")
+glm.performance <- confusionMatrix(data = factor(glm.result$pred), reference = factor(glm.result$severe), positive = "TRUE")
 print(glm.performance)	
 ```
 
