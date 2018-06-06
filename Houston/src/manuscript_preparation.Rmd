@@ -14,20 +14,15 @@ options(scipen = 1, digits = 2)
 require(dplyr)
 require(ggplot2)
 require(RcppRoll)
-require(markovchain)
+require(markovchain) # FIX: markovchain seems not compatible with R3.5.0
 require(reshape)
 require(survival)
 require(caret)
 require(e1071)
-knitr::opts_knit$set(root.dir = "~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
-
-
-
+# knitr::opts_knit$set(root.dir = "~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/prepare_violation.R")
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/roll_over.R")
-
-# knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
-
+#knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
 
 ```
 
@@ -360,11 +355,19 @@ svm.model <- svm(severe ~
                  +last.quarter.restrict+last.year.restrict+last.three.years.restrict
                  +last.quarter.viol+last.year.viol+last.three.years.viol
                  +last.quarter.death+last.year.death+last.three.years.death,
-                 data=labeled.data.lost.train, method="C-classification", kernel="linear")
+                 data=labeled.data.lost.train, method="C-classification", kernel="radial")
 summary(svm.model)
 
-pred.train <- predit(svm.model, labeled.data.lost.train)
-mean(pred.train==labeled.data.lost.train$severe)
+# save the computationally costly svm model
+#save(svm.model, file="./Houston/data/svm_radial.RData")
+
+plot(svm.model, labeled.data.lost.train)
+
+compareTable <- table (labeled.data.lost.train$severe, predict(svm.model))  # tabulate
+mean(labeled.data.lost.train$severe != predict(svm)) # false rate
+
+pred.train <- predict(svm.model, labeled.data.lost.train)
+mean(pred.train==labeled.data.lost.train$severe) # true rate
 ```
 
 ## Evaluation

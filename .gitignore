@@ -121,3 +121,4 @@ Thumbs.db
 
 # R temp files #
 .Rhistory
+packrat/lib*/
