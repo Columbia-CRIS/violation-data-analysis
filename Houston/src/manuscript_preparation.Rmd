@@ -19,6 +19,7 @@ require(reshape)
 require(survival)
 require(caret)
 require(e1071)
+require(randomForest)
 # knitr::opts_knit$set(root.dir = "~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/prepare_violation.R")
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/roll_over.R")
@@ -127,7 +128,7 @@ num.days.lm <- lm(0*num.death+1*num.days.lost+1*num.days.restrict~last.quarter.l
            data=complete.active.quarters %>% filter(active))
 summary(num.days.lm)
 ```
-Linear regression on num of deaths:
+Linear Regression on num of deaths:
 
 ```{r echo=FALSE}
 summary(lm(num.death~last.three.years.lost+last.quarter.viol+last.year.viol, data=complete.active.quarters %>% filter(active)))
@@ -241,6 +242,8 @@ print(c(fe.div2.performance$overall["Accuracy"], fe.div2.performance$byClass[c("
 
 ### Clustering
 
+#### K-means
+
 First, we cluster the data using K-means.    
 
 ```{r clustering, include=FALSE}
@@ -260,6 +263,10 @@ Then, let's visualize the clusters.
 clustering$cluster <- as.factor(clustering$cluster)
 ggplot(temp, aes(num.death, viol.quantity, color = clustering$cluster)) + geom_point()
 ```
+
+#### Spectral Clustering
+
+Next, let's try out spectral clustering.  (TODO)
     
 ### Markov Chain
 
@@ -360,14 +367,79 @@ summary(svm.model)
 
 # save the computationally costly svm model
 #save(svm.model, file="./Houston/data/svm_radial.RData")
+load("./Houston/output/svm_radial.RData")
 
-plot(svm.model, labeled.data.lost.train)
+tune_out <- tune.svm(severe~.,
+                     data=labeled.data.lost.train,
+                     gamma=10^(-3:3),
+                     cost=c(0.01,0.1,1,10,100,1000) ) # e1071 tune functions have internal iteration limits, in this case, it is better to use another package
 
 compareTable <- table (labeled.data.lost.train$severe, predict(svm.model))  # tabulate
-mean(labeled.data.lost.train$severe != predict(svm)) # false rate
+mean(labeled.data.lost.train$severe != predict(svm)) # misclassification rate
 
 pred.train <- predict(svm.model, labeled.data.lost.train)
-mean(pred.train==labeled.data.lost.train$severe) # true rate
+mean(pred.train==labeled.data.lost.train$severe) # classification rate
 ```
 
-## Evaluation
+It turns out SVM is not a good option for classifying highly skewed data. `tune.svm` does not work for this dataset due to its large size. Current SVM model with RBF kernel gives 100% misclassification rate.
+
+### Random Forest
+
+Random forest is self-bagging algorithm, which never overfits no matter what number of trees given. It is fast and performs well in most cases. We try to use random forests to classify the data.
+
+```{r randomForest, include=FALSE}
+# reformat labeled.data.lost.train$severe to factors so that `randomForest`
+# can do a classification
+labeled.data.lost.train$severe <- labeled.data.lost.train$severe %>% factor
+labeled.data.lost.result$severe <- labeled.data.lost.result$severe %>% factor
+
+# Note: nrow of `labled.data.lost.train` and `labeled.data.lost.result` are not equal
+# so, we need to modify the longer one of them in order to run `predict` function.
+# Let's do it on `labeled.data.lost.train`.
+labeled.data.lost.train.trimmed <- labeled.data.lost.train[9:nrow(labeled.data.lost.train), ]
+
+ptm <- proc.time() # start clock to time the process
+rf.model <- randomForest(severe ~ last.quarter.lost+last.year.lost+last.three.years.lost
+                 +last.quarter.restrict+last.year.restrict+last.three.years.restrict
+                 +last.quarter.viol+last.year.viol+last.three.years.viol
+                 +last.quarter.death+last.year.death+last.three.years.death,
+                 data = labeled.data.lost.train.trimmed,
+                 strata = mind_id,
+                 nodesize = 240, # tuning parameter; does not affect much; may improve speed a little
+                 ntree=200, # tuning parameter; no effect
+                 mtry = 2 # tuning parameter; improves OOB error a little; see `rf.tune.mtry`
+                 )
+proc.time() - ptm # stop the clock
+
+#save(rf.model, file="rf_model.RData") # base model, without any tuning
+#save(rf.model, file="rf_model_tuned.RData") # tuned model
+
+load("./Houston/output/rf_model.RData")
+load("./Houston/output/rf_model_tuned.RData")
+
+rf.tune.mtry <- tuneRF(labeled.data.lost.train[, c('last.quarter.lost','last.year.lost',
+                                                'last.three.years.lost','last.quarter.restrict',
+                                                'last.year.restrict', 'last.three.years.restrict',
+                                                'last.quarter.viol','last.year.viol',
+                                                'last.three.years.viol', 'last.quarter.death',
+                                                'last.year.death', 'last.year.death',
+                                                'last.three.years.death')],
+                       labeled.data.lost.train[, 'severe']
+                       )
+
+#save(rf.model, file="rf_tune_mtry.RData") # mtry tuning results
+
+pred <- predict(rf.model, data=labeled.data.lost.result)
+freq <- table(pred, labeled.data.lost.result$severe)
+sum(diag(freq))/sum(freq) # report accuracy
+
+plot(rf.model) # plot the error rate vs number of trees
+
+```
+
+It turns out that random forest can classify the problem in a reasonable time, however, the false predication of true events is 0.88 after tuning. The OOB error is 1.1%. tuning does not improve the performance significantly.
+
+Now, let's try an ensemble learning method, which is a combination of random forest and SVM.
+
+### Ensemble Learning
+
