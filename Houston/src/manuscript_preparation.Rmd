@@ -20,6 +20,8 @@ require(survival)
 require(caret)
 require(e1071)
 require(randomForest)
+require(kernlab)
+require(SuperLearner)
 # knitr::opts_knit$set(root.dir = "~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/prepare_violation.R")
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/roll_over.R")
@@ -253,6 +255,10 @@ set.seed(20)
 clustering <- kmeans(temp[, 6:ncol(temp)], 3, nstart=20)
 freq_table <- table(clustering$cluster)
 
+#save(clustering, file="kmeans_clustering.RData")
+
+load("./Houston/output/kmeans_clustering.RData")
+
 print(clustering$centers)
 print(clustering$size)
 ```
@@ -266,8 +272,25 @@ ggplot(temp, aes(num.death, viol.quantity, color = clustering$cluster)) + geom_p
 
 #### Spectral Clustering
 
-Next, let's try out spectral clustering.  (TODO)
-    
+Next, let's try out spectral clustering, which is based on the connectivity between data points.
+
+```{r sprectral clustering, include=FALSE}
+temp <- complete.active.quarters %>% filter(active==TRUE)
+set.seed(20)
+
+sc.model <- specc(temp[, 6:ncol(temp)], centers=3)
+#save(sc.model, file="sc_model.RData")
+
+load("./Houston/output/sc_model.RData")
+
+#plot(temp[, 6:ncol(temp)], col=sc.model, pch=4) # too many features, very slow
+plot(temp[, 6], col=sc.model, pch=4) # plot num.days.lost cluster
+
+```
+
+The dataset is highly skewed, so K-means does not perform well as expected since it uses means to estimate centers. On the other hand, spectral clustering uses affinity between data points to cluster. However, the performance is poor as well.
+
+
 ### Markov Chain
 
 ```{r markov, include=FALSE}
@@ -392,6 +415,7 @@ Random forest is self-bagging algorithm, which never overfits no matter what num
 # can do a classification
 labeled.data.lost.train$severe <- labeled.data.lost.train$severe %>% factor
 labeled.data.lost.result$severe <- labeled.data.lost.result$severe %>% factor
+set.seed(20)
 
 # Note: nrow of `labled.data.lost.train` and `labeled.data.lost.result` are not equal
 # so, we need to modify the longer one of them in order to run `predict` function.
@@ -439,7 +463,64 @@ plot(rf.model) # plot the error rate vs number of trees
 
 It turns out that random forest can classify the problem in a reasonable time, however, the false predication of true events is 0.88 after tuning. The OOB error is 1.1%. tuning does not improve the performance significantly.
 
-Now, let's try an ensemble learning method, which is a combination of random forest and SVM.
 
 ### Ensemble Learning
 
+Now, let's try an ensemble learning method, which is a combination of single learning algorithms. In this case, let's try svm and random forest and see if the ensemble learning could improve the performance.
+
+Read [this post](https://www.datacamp.com/community/tutorials/ensemble-r-machine-learning) first.
+
+```{r ensemble, include=FALSE}
+# encode response variable for superlearner
+y <- as.numeric(labeled.data.lost.train$severe)-1
+ytest <- as.numeric(labeled.data.lost.result$severe)-1
+
+# separate predictors
+x <- data.frame(labeled.data.lost.train[, c('last.quarter.lost','last.year.lost',
+                                            'last.three.years.lost','last.quarter.restrict',
+                                            'last.year.restrict', 'last.three.years.restrict',
+                                            'last.quarter.viol','last.year.viol',
+                                            'last.three.years.viol', 'last.quarter.death',
+                                            'last.year.death', 'last.year.death',
+                                            'last.three.years.death')])
+xtest <- data.frame(labeled.data.lost.result[, c('last.quarter.lost','last.year.lost',
+                                            'last.three.years.lost','last.quarter.restrict',
+                                            'last.year.restrict', 'last.three.years.restrict',
+                                            'last.quarter.viol','last.year.viol',
+                                            'last.three.years.viol', 'last.quarter.death',
+                                            'last.year.death', 'last.year.death',
+                                            'last.three.years.death')])
+
+# TODO: 1. try default params first
+#       2. then try tuned params with ksvm and randomForest
+#       3. try some other learners such as glmnet
+ensemble.model <- SuperLearner(y,
+                               x,
+                               family=binomial(),
+                               SL.library=list("SL.randomForest", # TODO: use ranger, SL.randomForest will be removed from SuperLearner
+                                               "SL.ksvm") 
+                               )
+
+SL.randomForest.tune <- function(...){
+      SL.randomForest(..., num.trees=200, mtry=2, nodeside=240)
+    }
+
+ensemble.model.tune <- SuperLearner(y,
+                                    x,
+                                    family=binomial(),
+                                    SL.library=list("SL.ranger", # TODO: do `install.packages("ranger")` first if using `SL.ranger`
+                                                    "SL.ksvm",
+                                                    "SL.randomForest.tune") 
+                                    )
+
+ensemble.model.more <- SuperLearner(y,
+                                    x,
+                                    family=binomial(),
+                                    SL.library=list("SL.ranger", # TODO: need pacakge `ranger`, please do `install.packages("ranger")`
+                                                    "SL.ksvm",
+                                                    "SL.randomForest.tune",
+                                                    "SL.glmnet") # TDOD: need package `glmnet`
+                                    )
+
+
+```
