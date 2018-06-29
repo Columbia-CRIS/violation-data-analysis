@@ -398,7 +398,7 @@ tune_out <- tune.svm(severe~.,
                      cost=c(0.01,0.1,1,10,100,1000) ) # e1071 tune functions have internal iteration limits, in this case, it is better to use another package
 
 compareTable <- table (labeled.data.lost.train$severe, predict(svm.model))  # tabulate
-mean(labeled.data.lost.train$severe != predict(svm)) # misclassification rate
+mean(labeled.data.lost.train$severe != predict(svm.model)) # misclassification rate
 
 pred.train <- predict(svm.model, labeled.data.lost.train)
 mean(pred.train==labeled.data.lost.train$severe) # classification rate
