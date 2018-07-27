@@ -22,10 +22,19 @@ require(e1071)
 require(randomForest)
 require(kernlab)
 require(SuperLearner)
+
+## Abhishek Macbook
 # knitr::opts_knit$set(root.dir = "~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/prepare_violation.R")
 # source("~/Documents/Projects/Github/CRIS/ViolationData/violation-data-analysis/Houston/src/roll_over.R")
-#knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
+
+##Abhishek Desktop
+knitr::opts_knit$set(root.dir = "D:/Github/CRIS/violation-data-analysis/") # !! CHANGE PATH TO MATCH YOUR OWN
+source("D:/Github/CRIS/violation-data-analysis/Houston/src/prepare_violation.R")
+source("D:/Github/CRIS/violation-data-analysis/Houston/src/roll_over.R")
+
+##Albert Macbook
+# knitr::opts_knit$set(root.dir = "~/documents/projects/violation-data-analysis") # !! CHANGE PATH TO MATCH YOUR OWN
 
 ```
 
@@ -237,7 +246,7 @@ fe.div2.result <- fe.div2.result %>% mutate(
 # head(fe.div2.result %>% filter(year >= 2005) %>% arrange(desc(prob), mine.name), 10)
 
 # confusion matrix and other performance metrics
-fe.div2.performance <- confusionMatrix(data = fe.div2.result$pred, reference = fe.div2.result$severe, positive = "TRUE")
+fe.div2.performance <- confusionMatrix(data = factor(fe.div2.result$pred), reference = factor(fe.div2.result$severe), positive = "TRUE")
 print(fe.div2.performance$table)
 print(c(fe.div2.performance$overall["Accuracy"], fe.div2.performance$byClass[c("Sensitivity", "Specificity", "Precision", "F1")]))   
 ```
@@ -400,7 +409,7 @@ tune_out <- tune.svm(severe~.,
 compareTable <- table (labeled.data.lost.train$severe, predict(svm.model))  # tabulate
 mean(labeled.data.lost.train$severe != predict(svm.model)) # misclassification rate
 
-pred.train <- predict(svm.model, labeled.data.lost.train)
+pred.train <- predict(svm.model, labeled.data.lost.train) # Returns value from 0 to 1. Needs to be thresholded to give 0 or 1
 mean(pred.train==labeled.data.lost.train$severe) # classification rate
 ```
 
@@ -478,6 +487,7 @@ ytest <- as.numeric(labeled.data.lost.result$severe)-1
 # separate predictors
 x <- data.frame(labeled.data.lost.train[, c('last.quarter.lost','last.year.lost',
                                             'last.three.years.lost','last.quarter.restrict',
+                                            
                                             'last.year.restrict', 'last.three.years.restrict',
                                             'last.quarter.viol','last.year.viol',
                                             'last.three.years.viol', 'last.quarter.death',
