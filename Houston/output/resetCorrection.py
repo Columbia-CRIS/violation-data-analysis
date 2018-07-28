@@ -7,6 +7,7 @@ import math
 import numpy as np
 from operator import mul
 
+#exponential discount factor
 def exp(s):
     e = math.e
     b = (1-e**-11)/(e-e*s)
@@ -36,6 +37,7 @@ def reset_correction(file_path):
             c = real[i] + counts[i-1]
             counts.append(c)
 
+        #calculate time since accident
         time = [0]
         begin = 1
         for i in range(1,len(counts)):
@@ -55,6 +57,7 @@ def reset_correction(file_path):
                         else:
                             time.append(0)
 
+        #calculate discount factor. becomes less generous with more accidents, and decays over 3 years
         e = math.e
         adj = [1]
         i = 1
@@ -103,4 +106,13 @@ def reset_correction(file_path):
                      'NEW_PROB',
                      'NEW_PRED']]
     df_out = df_tmp.rename(index=str, columns={'NEW_PRED':'PREDICTION','NEW_PROB':'PROBABILITY'})
+    
+    #output new prediction results
     df_out.to_csv('outputResults.csv')
+    
+
+def main():
+    reset_correction('./Result_clogit.RData')
+    
+    
+main()
