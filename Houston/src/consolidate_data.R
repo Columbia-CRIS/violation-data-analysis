@@ -155,12 +155,8 @@ temp <- merge(temp, mines, by = "MINE_ID", all.x=TRUE)
 #rearranging columns
 temp <- temp[, c(1, 29:ncol(temp), 2:3, 28, 4:27)]
 
-
-q_order <- temp[order(temp[,1], temp[,6], temp[,5]),]
-
-
 # result
-complete_active_quarters <- q_order
+complete_active_quarters <- temp
 save(complete_active_quarters, file="./Houston/output/Consolidated.RData")
 
 # see simple_lm.R for simple lm

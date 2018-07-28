@@ -29,17 +29,10 @@ labeled_data_death_dis_only <- complete_active_quarters %>% filter(ACTIVE) %>% m
 labeled_all_data <- labeled_data_death_dis_only
 set.seed(1)
 data_len <- nrow(labeled_data_death_dis_only)
-
-groups <-
-	labeled_all_data %>%
-	select(MINE_ID) %>%
-	distinct(MINE_ID) %>%
-	rowwise() %>%
-	mutate(group=sample(c("train","test"),1,replace=TRUE,prob=c(.5,.5)))
-
-labeled_all_data <- labeled_all_data %>% left_join(groups)
-labeled_test <- filter(labeled_all_data, group == "test")
-labeled_train <- filter(labeled_all_data, group == "train")
+train_indices <- sample(seq_len(nrow(labeled_data_death_dis_only)), size = floor(data_len * 0.5))
+labeled_train <- labeled_data_death_dis_only[train_indices, ]
+labeled_test <- labeled_data_death_dis_only[-train_indices, ]
+labeled_test <- labeled_test %>% filter(is.element(MINE_ID, unique(labeled_train$MINE_ID)))
 
 # fixed effects on combined data ----
 # fixed effects model
@@ -48,7 +41,7 @@ in_sample_model <- clogit(SEVERE ~
                          LAST_QUARTER_DAYS_RESTRICT + LAST_YEAR_DAYS_RESTRICT + LAST_THREE_YEARS_DAYS_RESTRICT +
                          LAST_QUARTER_DEATH + LAST_YEAR_DEATH + LAST_THREE_YEARS_DEATH +
                          LAST_QUARTER_DIS + LAST_YEAR_DIS + LAST_THREE_YEARS_DIS +
-                         LAST_YEAR_VIOLATION + LAST_THREE_YEARS_VIOLATION +
+                         LAST_QUARTER_VIOLATION + LAST_YEAR_VIOLATION + LAST_THREE_YEARS_VIOLATION +
                          LAST_QUARTER_PENALTY + LAST_YEAR_PENALTY + LAST_THREE_YEARS_PENALTY
                          # + strata(MINE_ID), # use this, we get 82% (TP) + 56% (TN)
                          + strata(CURRENT_MINE_TYPE,COAL_METAL_IND), # use this, we get 58% (TP) + 77% (TN)
@@ -84,7 +77,7 @@ out_sample_model <- clogit(SEVERE ~
                             LAST_QUARTER_DAYS_RESTRICT + LAST_YEAR_DAYS_RESTRICT + LAST_THREE_YEARS_DAYS_RESTRICT +
                             LAST_QUARTER_DEATH + LAST_YEAR_DEATH + LAST_THREE_YEARS_DEATH +
                             LAST_QUARTER_DIS + LAST_YEAR_DIS + LAST_THREE_YEARS_DIS +
-                            LAST_YEAR_VIOLATION + LAST_THREE_YEARS_VIOLATION +
+                            LAST_QUARTER_VIOLATION + LAST_YEAR_VIOLATION + LAST_THREE_YEARS_VIOLATION +
                             LAST_QUARTER_PENALTY + LAST_YEAR_PENALTY + LAST_THREE_YEARS_PENALTY
                           #+ strata(MINE_ID),
                           + strata(CURRENT_MINE_TYPE,COAL_METAL_IND), 
@@ -119,3 +112,4 @@ save(
      in_sample_result, in_sample_performance,
      out_sample_result, out_sample_performance,
      file="./Houston/output/Result_clogit.RData")
+
